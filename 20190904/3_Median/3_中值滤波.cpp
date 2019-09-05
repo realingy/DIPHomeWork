@@ -1,7 +1,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
-
 #include "path.h"
 
 using namespace cv;
@@ -30,7 +29,7 @@ uchar Median(uchar n1, uchar n2, uchar n3, uchar n4, uchar n5,
 
 //ÖÐÖµÂË²¨
 void MedianFliter(const Mat &src, Mat &dst) {
-	if (!src.data)return;
+	if (!src.data) return;
 	Mat _dst(src.size(), src.type());
 	if (src.channels() == 3)
 	{
@@ -75,11 +74,11 @@ void MedianFliter(const Mat &src, Mat &dst) {
 	imshow("mediaFilter", dst);
 }
 
-
 int main()
 {
-	Mat src = imread(MediaPath + "test.bmp", 0);
+	Mat src = imread(MediaPath + "test.bmp");
 	imshow("Ô­Í¼", src);
+	cout << src.channels() << endl;
 
 	Mat dst = src.clone();
 	MedianFliter(src, dst);

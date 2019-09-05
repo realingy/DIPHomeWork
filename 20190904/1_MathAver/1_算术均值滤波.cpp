@@ -1,5 +1,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <iostream>
 
 #include "path.h"
 
@@ -54,8 +55,9 @@ void MathMediaFilter(Mat &src, Mat &dst) {
 
 int main()
 {
-	Mat src = imread(MediaPath + "test.bmp", 0);
+	Mat src = imread(MediaPath + "test.bmp");
 	imshow("ԭͼ", src);
+	cout << src.channels() << endl;
 
 	Mat dst = src.clone();
 	MathMediaFilter(src, dst);

@@ -9,6 +9,7 @@ add_subdirectory(1_MathAver)
 add_subdirectory(2_GeoAver)
 add_subdirectory(3_Median)
 add_subdirectory(4_AHE)
+add_subdirectory(5_Max)
 
 
 

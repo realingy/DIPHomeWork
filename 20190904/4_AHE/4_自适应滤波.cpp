@@ -95,12 +95,11 @@ void selfAdaptiveFilter(Mat&src, Mat&dst, int kernal_size)
 	imshow("selfAdaptiveFilter", dst);
 }
 
-
-
 int main()
 {
-	Mat src = imread(MediaPath + "test.bmp", 0);
+	Mat src = imread(MediaPath + "test.bmp");
 	imshow("ԭͼ", src);
+	cout << src.channels() << endl;
 
 	Mat dst = src.clone();
 	selfAdaptiveFilter(src, dst, 8);
