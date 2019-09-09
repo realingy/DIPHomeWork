@@ -17,6 +17,6 @@ include_directories(${OpenCV_DIR}/install/include/opencv2)
 aux_source_directory(. DIR_SRCS)
 
 # 生成目标信息
-set(EXENAME 17_AHE)
+set(EXENAME 2_AHE)
 add_executable(${EXENAME} ${DIR_SRCS})
 target_link_libraries (${EXENAME} ${OpenCV_LIBS})

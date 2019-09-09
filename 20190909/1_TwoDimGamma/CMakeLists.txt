@@ -17,6 +17,6 @@ include_directories(${OpenCV_DIR}/install/include/opencv2)
 aux_source_directory(. DIR_SRCS)
 
 # 生成目标信息
-set(EXENAME 16_GammaCali)
+set(EXENAME 1_GammaCali)
 add_executable(${EXENAME} ${DIR_SRCS})
 target_link_libraries (${EXENAME} ${OpenCV_LIBS})
