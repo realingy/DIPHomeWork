@@ -4,42 +4,51 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <iostream>
 #include <fstream>
-#include "path.h"
 
 using namespace cv;
 using namespace std;
+
+std::string MediaPath= "D:\\dir_git\\DIPHomeWork\\20190909\\data";
 
 Mat eaualizeHist_GO(Mat src);
 Mat aheGO(Mat src, int _step = 8);
 Mat clheGO(Mat src, int _step = 8);
 Mat claheGoWithoutInterpolation(Mat src, int _step = 8);
-Mat claheGO(Mat src, int _step = 8);
+Mat claheGO(Mat src, int _step = 4);
 Mat RGB2HSV(Mat src);
 
 int main(int argc, char * argv[])
 {
-    //读入灰度的手部图像
-    //const Mat src = imread(MediaPath + "dropx.png", 0);
-	//const Mat src = imread(MediaPath + "lightCali.jpg", 0);
+    //读入灰度图
 
-    //const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C4_lite.png", 0);
-    //const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C4_lite_reg.png", 0);
-    const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C1_lite.png", 0);
-    const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C1_lite_reg.png", 0);
-    //const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C0_lite.png", 0);
-    //const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C0_lite_reg.png", 0);
-    //const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C4_lite.png", 0);
-    //const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C4_lite_reg.png", 0);
-    //const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C1_lite.png", 0);
-    //const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C1_lite_reg.png", 0);
-    //const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C0_lite.png", 0);
-    //const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C0_lite_reg.png", 0);
+    const Mat src = imread(MediaPath + "/src/Sp2_P0_0_C1_lite.png", 0);
+    const Mat cali = imread(MediaPath + "/cali/Sp2_P0_0_C1_lite.png", 0);
 
-    namedWindow("原始图像", WINDOW_NORMAL);
-    imshow("原始图像",src);
+    cv::namedWindow("原始图像", WINDOW_NORMAL);
+    cv::imshow("原始图像",src);
 
-	namedWindow("第一次标定结果", WINDOW_NORMAL);
-	imshow("第一次标定结果", dst);
+	cv::namedWindow("第一次标定结果", WINDOW_NORMAL);
+	cv::imshow("第一次标定结果", cali);
+
+	Mat sub = src - cali;
+    cv::namedWindow("SUB0", WINDOW_NORMAL);
+    cv::imshow("SUB0", sub);
+
+	sub = cali - src;
+    cv::namedWindow("SUB1", WINDOW_NORMAL);
+    cv::imshow("SUB1", sub);
+
+    Mat clahe;
+	clahe = claheGO(src);
+
+    cv::namedWindow("CLAHE", WINDOW_NORMAL);
+    cv::imshow("CLAHE", clahe);
+
+	sub = src - clahe;
+    cv::namedWindow("SUB3", WINDOW_NORMAL);
+    cv::imshow("SUB3", sub);
+
+//	imwrite(MediaPath + "/DropX/cali/Sp0_P6_0_C4_lite_cali.png", clahe);
 
 	/*
 	int row = src.rows;
@@ -59,27 +68,6 @@ int main(int argc, char * argv[])
 	namedWindow("亮度分量", WINDOW_NORMAL);
 	imshow("亮度分量", V);
 	*/
-
-	Mat sub = src - dst;
-    namedWindow("SUB0", WINDOW_NORMAL);
-    imshow("SUB0", sub);
-
-	sub = dst - src;
-    namedWindow("SUB1", WINDOW_NORMAL);
-    imshow("SUB1", sub);
-
-    Mat clahe;
-	clahe = claheGO(src);
-
-    namedWindow("CLAHE", WINDOW_NORMAL);
-    imshow("CLAHE", clahe);
-
-	sub = src - clahe;
-    namedWindow("SUB", WINDOW_NORMAL);
-    imshow("SUB", sub);
-
-//	imwrite(MediaPath + "/DropX/cali/Sp0_P6_0_C4_lite_cali.png", clahe);
-
 
 #if 0
     Mat dst = src.clone();
@@ -138,11 +126,6 @@ int main(int argc, char * argv[])
     namedWindow("SUB", WINDOW_NORMAL);
     imshow("SUB", sub);
 #endif
-
-//    namedWindow("CLAHE_Without_Interpolation", WINDOW_NORMAL);
-//    imshow("CLAHE_Without_Interpolation",CLAHE_Without_Interpolation);
-//    namedWindow("OpencvCLAHE", WINDOW_NORMAL);
-//    imshow("OpencvCLAHE",CLAHE_OpenCV);
 
     waitKey();
 	destroyAllWindows();
@@ -610,3 +593,6 @@ cv::Mat Gray2RGB(cv::Mat img, double dp, double minDist, double param1, double p
 	}
 	return cimg;
 }
+
+
+

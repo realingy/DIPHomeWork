@@ -4,10 +4,11 @@
 #include "opencv2/highgui/highgui.hpp"
 #include <iostream>
 #include <fstream>
-#include "path.h"
 
 using namespace cv;
 using namespace std;
+
+std::string MediaPath= "D:\\dir_git\\DIPHomeWork\\20190909\\data";
 
 Mat RGB2HSV(Mat src) {
 	int row = src.rows;
@@ -144,30 +145,25 @@ Mat work(Mat src) {
 
 int main()
 {
-	//const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C4_lite_reg.png", 0);
-	//const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C4_lite.png", 0);
-	Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C1_lite_reg.png");
-	const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C1_lite.png");
-	//const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P6_0_C0_lite_reg.png", 0);
-	//const Mat src = imread(MediaPath + "/DropX/Sp0_P6_0_C0_lite.png", 0);
-	//const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C4_lite_reg.png", 0);
-	//const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C4_lite.png", 0);
-	//const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C1_lite_reg.png", 0);
-	//const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C1_lite.png", 0);
-	//const Mat dst = imread(MediaPath + "/DropX/reg/Sp0_P5_0_C0_lite_reg.png", 0);
-	//const Mat src = imread(MediaPath + "/DropX/Sp0_P5_0_C0_lite.png", 0);
+    const Mat src = imread(MediaPath + "/src/Sp2_P0_0_C1_lite.png");
+    Mat cali = imread(MediaPath + "/cali/Sp2_P0_0_C1_lite.png");
 
 	namedWindow("原始图像", WINDOW_NORMAL);
 	imshow("原始图像", src);
 
 	namedWindow("第一次标定结果", WINDOW_NORMAL);
-	imshow("第一次标定结果", dst);
+	imshow("第一次标定结果", cali);
 
-	/*
+	Mat sub(src.size(), src.type());
+	sub = src - cali;
+	namedWindow("SUB", CV_WINDOW_NORMAL);
+	imshow("SUB", sub);
+
 	Mat gamma = work(src);
 	namedWindow("GAMMA", WINDOW_NORMAL);
 	imshow("GAMMA", gamma);
 
+	/*
 	Mat sub = src - gamma;
 	namedWindow("SUB", WINDOW_NORMAL);
 	imshow("SUB", sub);
@@ -176,13 +172,6 @@ int main()
 	namedWindow("SUB2", WINDOW_NORMAL);
 	imshow("SUB2", sub);
 	*/
-
-	int row = src.rows;
-	int col = src.cols;
-	Mat sub(row, col, CV_16SC1);
-	sub = src - dst;
-	namedWindow("SUB3", CV_WINDOW_NORMAL);
-	imshow("SUB3", sub);
 
 	/*
 	float average = mean(sub)[0];
@@ -263,159 +252,5 @@ int main()
 
 }
 
-#if 0
-#include <cmath>
-#include <iostream>  
 
-#include <opencv2\core\core.hpp>  
-#include <opencv2\highgui\highgui.hpp>  
-#include <opencv2\imgproc\imgproc.hpp>  
-//#include "opencv2/core/core.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/calib3d/calib3d.hpp"
-//#include "opencv2/highgui/highgui.hpp"
-#include "path.h"
 
-using namespace cv;
-using namespace std;
-
-float get_Gamma_Value(Mat& gray_img);
-
-void create_Gamma_Table(unsigned char* gama_table, float gama_value);
-
-void Gamma_Correction(Mat& gray_img, Mat& dst_img, unsigned char* gama_table);
-
-int main(int argc, char* argv[])
-{
-#if 0
-	char input_image_name[100];
-	char output_image_name[100];
-	int image_num = 476;
-
-	for (int i = 1; i <= image_num; i++)
-	{
-		sprintf(input_image_name, "../%s\\%d.jpg", "temp", i);
-		Mat input_image = imread(input_image_name);
-
-		if (input_image.empty())
-		{
-			cout << "Failed to load image !" << endl;
-			continue;;
-		}
-
-		Mat gray_image;
-		cvtColor(input_image, gray_image, CV_BGR2GRAY);
-
-		// Start a timer
-		double duration;
-		duration = static_cast<double>(cv::getTickCount());
-
-		float gama_value = get_Gamma_Value(gray_image);
-
-		unsigned char LUT[256];
-		create_Gamma_Table(LUT, gama_value);
-
-		Mat result_image(gray_image.rows, gray_image.cols, gray_image.type());
-		Gamma_Correction(gray_image, result_image, LUT);
-
-		// Calculate the time cost and print
-		duration = static_cast<double>(cv::getTickCount()) - duration;
-		duration /= cv::getTickFrequency();
-		std::cout << duration * 1000 << " ms" << std::endl;
-
-		imshow("Source_Image", input_image);
-		imshow("Gamma_Correction", result_image);
-		//imwrite("test6.bmp",result_image);
-
-		waitKey(1);
-	}
-#endif
-
-	//Mat input_image = imread(MediaPath+);
-	const Mat input_image = imread(MediaPath + "lightCali.jpg");
-
-	if (input_image.empty())
-	{
-		cout << "Failed to load image !" << endl;
-		return -1;
-	}
-
-	Mat gray_image;
-	cvtColor(input_image, gray_image, CV_BGR2GRAY);
-
-	// Start a timer
-	double duration;
-	duration = static_cast<double>(cv::getTickCount());
-
-	float gama_value = get_Gamma_Value(gray_image);
-
-	unsigned char LUT[256];
-	create_Gamma_Table(LUT, gama_value);
-
-	Mat result_image(gray_image.rows, gray_image.cols, gray_image.type());
-	Gamma_Correction(gray_image, result_image, LUT);
-
-	// Calculate the time cost and print
-	duration = static_cast<double>(cv::getTickCount()) - duration;
-	duration /= cv::getTickFrequency();
-	std::cout << duration * 1000 << " ms" << std::endl;
-
-	imshow("Source_Image", input_image);
-	imshow("Gamma_Correction", result_image);
-	//imwrite("test6.bmp",result_image);
-
-	waitKey(0);
-
-	return 0;
-}
-
-/****************************************************
-①当Gamma值比1大时，在输入值相同的情况下，输出值减小；
-②当Gamma值为1时，输出值不变；
-③当Gamma值比1小时，在输入值相同的情况下，输出值增加。
-****************************************************/
-//公式：gamma = log(y/range)/ log(x/range)，x是整幅图像像素的平均值，y是像素值最大范围的一半。
-
-//先计算灰度图像的像素均值mean，将计算出来的均值带入 gammaVal = log(mean/255)/log(0.5) 这个公式中，就可以得到Gamma值了。
-float get_Gamma_Value(Mat& gray_img)
-{
-	if (gray_img.empty())
-	{
-		return -1.0;
-	}
-
-	cv::Scalar meam_value = cv::mean(gray_img);
-
-	float val = meam_value.val[0];
-	//float gamma_val = (log10(val / 255.0)) / (log10(0.5));
-	float gamma_val = (log10(0.5)) / (log10(val / 255.0));
-
-	return gamma_val;
-}
-
-void create_Gamma_Table(unsigned char* gama_table, float gama_value)
-{
-	for (int i = 0; i < 256; i++)
-	{
-		float f = (i + 0.5f) / 255.0;
-		f = (float)(pow(f, gama_value));
-		gama_table[i] = saturate_cast<uchar>(f * 255.0f - 0.5f);
-	}
-}
-
-void Gamma_Correction(Mat& gray_img, Mat& dst_img, unsigned char* gama_table)
-{
-	if (gray_img.channels() != dst_img.channels() || gray_img.cols != dst_img.cols || gray_img.rows != dst_img.rows)
-	{
-		return;
-	}
-
-	for (int i = 0; i < gray_img.rows; i++)
-	{
-		for (int j = 0; j < gray_img.cols; j++)
-		{
-			dst_img.at<uchar>(i, j) = gama_table[(int)(gray_img.at<uchar>(i, j))];
-		}
-	}
-}
-#endif
