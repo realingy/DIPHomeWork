@@ -59,7 +59,7 @@ int main()
 	imshow("ԭͼ", src);
 	cout << src.channels() << endl;
 
-	Mat dst = src.clone();
+	Mat dst = Mat(src.size(), src.type()); // src.clone();
 	MathMediaFilter(src, dst);
 
 	waitKey(0);

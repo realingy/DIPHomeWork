@@ -80,7 +80,7 @@ int main()
 	imshow("ԭͼ", src);
 	cout << src.channels() << endl;
 
-	Mat dst = src.clone();
+	Mat dst = Mat(src.size(), src.type());
 	MedianFliter(src, dst);
 
 	waitKey(0);

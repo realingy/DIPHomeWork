@@ -28,7 +28,7 @@ using namespace std;
 //×ÔÊÊÓ¦ÂË²¨
 void selfAdaptiveFilter(Mat&src, Mat&dst, int kernal_size)
 {
-	CV_Assert(src.type() == CV_8UC1 || src.type() == CV_8U);
+	//CV_Assert(src.type() == CV_8UC1 || src.type() == CV_8U);
 	if (dst.empty())
 	{
 		dst.create(src.rows, src.cols, CV_8UC1);
@@ -101,7 +101,7 @@ int main()
 	imshow("Ô­Í¼", src);
 	cout << src.channels() << endl;
 
-	Mat dst = src.clone();
+	Mat dst = Mat(src.size(), src.type());
 	selfAdaptiveFilter(src, dst, 8);
 
 	waitKey(0);
