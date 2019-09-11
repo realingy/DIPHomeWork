@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 带通/带阻滤波器
+"""
+理想带阻/通滤波模板
+"""
 
-# 理想的带阻/通滤波模板
 def IdealBand(src, w, d0, ftype = 'elimin'):
     r, c = src.shape
     template = np.zeros((r, c), np.float32)  # 构建滤波器
@@ -15,7 +16,7 @@ def IdealBand(src, w, d0, ftype = 'elimin'):
                 template[i, j] = 0
             else:
                 template[i, j] = 1
-    if ftype == 'pass': #带通
+    if ftype == 'pass': # 带通
         template = 1 - template
     return template
 
@@ -38,7 +39,9 @@ plt.axis('off')
 plt.subplot(222), plt.imshow(fsrc, 'gray'), plt.title('Fourier Image')
 plt.axis('off')
 
+# 生成带阻滤波器
 mask = IdealBand(fshift, 10, 0)
+
 fshiftdst = mask * fshift
 
 fdst = np.log(np.abs(fshiftdst))
