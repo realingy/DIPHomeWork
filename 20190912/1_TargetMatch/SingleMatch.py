@@ -18,7 +18,7 @@ theight, twidth = template.shape[:2]
 result = cv2.matchTemplate(target,template,cv2.TM_SQDIFF_NORMED)
 
 # 归一化处理
-cv2.normalize( result, result, 0, 1, cv2.NORM_MINMAX, -1 )
+cv2.normalize(result, result, 0, 1, cv2.NORM_MINMAX, -1)
 
 # 寻找矩阵（一维数组当做向量，用Mat定义）中的最大值和最小值的匹配结果及其位置
 min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
