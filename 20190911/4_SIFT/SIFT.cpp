@@ -1,7 +1,10 @@
-﻿/*
-#include "highgui/highgui.hpp"  
-#include "opencv2/nonfree/nonfree.hpp"  
-#include "opencv2/legacy/legacy.hpp" 
+﻿#include "highgui/highgui.hpp"  
+//#include "opencv2/legacy/legacy.hpp" 
+#include "opencv2/core.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/imgproc.hpp"
+#include"opencv2/xfeatures2d.hpp"
+#include"opencv2/xfeatures2d/nonfree.hpp"
 #include <vector>
 
 using namespace cv;
@@ -12,8 +15,9 @@ Point2f getTransformPoint(const Point2f originalPoint, const Mat &transformMaxtr
 
 int main(int argc, char *argv[])
 {
-	Mat image01 = imread(argv[1]);
-	Mat image02 = imread(argv[2]);
+	Mat image01 = imread("21.jpg");
+	Mat image02 = imread("22.jpg");
+
 	imshow("拼接图像1", image01);
 	imshow("拼接图像2", image02);
 
@@ -82,7 +86,6 @@ Point2f getTransformPoint(const Point2f originalPoint, const Mat &transformMaxtr
 	float y = targetP.at<double>(1, 0) / targetP.at<double>(2, 0);
 	return Point2f(x, y);
 }
-*/
 
 
 /*
@@ -159,6 +162,7 @@ int main()
 }
 */
 
+#if 0
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -219,8 +223,8 @@ void OptimizeSeam(Mat& img1, Mat& trans, Mat& dst)
 
 int main()
 {
-	Mat srcImage1 = imread( MediaPath + "SIFT/1.jpg", 1);
-	Mat srcImage2 = imread( MediaPath + "SIFT/2.jpg", 1);
+	Mat srcImage1 = imread( MediaPath + "SIFT/left.jpg", 1);
+	Mat srcImage2 = imread( MediaPath + "SIFT/right.jpg", 1);
 	if (!srcImage1.data || !srcImage2.data)
 	{
 		cout << "读取图片出错" << endl;
@@ -281,3 +285,4 @@ int main()
 	waitKey(0);
 	return 0;
 }
+#endif

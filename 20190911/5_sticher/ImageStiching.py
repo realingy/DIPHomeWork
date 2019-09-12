@@ -5,8 +5,8 @@ import cv2
 # imageA = cv2.imread("image/left_01.png")
 # imageB = cv2.imread("image/right_01.png")
 
-imageA = cv2.imread("image/02_left.jpg")
-imageB = cv2.imread("image/02_right.jpg")
+imageA = cv2.imread("image/3_left.png")
+imageB = cv2.imread("image/3_right.png")
 
 # imageA = cv2.imread("image/1.png")
 # imageB = cv2.imread("image/2.png")

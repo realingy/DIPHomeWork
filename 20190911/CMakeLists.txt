@@ -6,6 +6,5 @@ project(DIP20190911)
 include_directories(${CMAKE_SOURCE_DIR}/..)
 
 add_subdirectory(4_SIFT)
-
-# add_subdirectory(2_AHE)
+add_subdirectory(6_SURF)
 
