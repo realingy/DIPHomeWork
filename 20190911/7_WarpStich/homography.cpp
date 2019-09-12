@@ -5,7 +5,6 @@
 Homography::Homography()
 {
 	//detector = new SIFT(800);
-	detector = new SIFT(800);
 	extractor = detector;
 	matcher = DescriptorMatcher::create("BruteForce");
 }
@@ -23,12 +22,12 @@ Homography::~Homography()
 
 void Homography::setFeatureDetector(string detectorName)
 {
-	detector = FeatureDetector::create(detectorName);
+	//detector = FeatureDetector::create(detectorName);
 }
 
 void Homography::setDescriptorExtractor(string descriptorName)
 {
-	extractor = DescriptorExtractor::create(descriptorName);
+	//extractor = DescriptorExtractor::create(descriptorName);
 }
 
 void Homography::setDescriptorMatcher(string matcherName)
