@@ -7,4 +7,5 @@ include_directories(${CMAKE_SOURCE_DIR}/..)
 
 add_subdirectory(4_SIFT)
 add_subdirectory(6_SURF)
+add_subdirectory(7_WarpStich)
 

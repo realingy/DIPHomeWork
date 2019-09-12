@@ -194,13 +194,13 @@ void OptimizeSeam(Mat& img1, Mat& trans, Mat& dst)
 				alpha = (processWidth - (j - start)) / processWidth;
 			}
 
-			//d[j * 3] = p[j * 3] * alpha + t[j * 3] * (1 - alpha);
-			//d[j * 3 + 1] = p[j * 3 + 1] * alpha + t[j * 3 + 1] * (1 - alpha);
-			//d[j * 3 + 2] = p[j * 3 + 2] * alpha + t[j * 3 + 2] * (1 - alpha);
+			d[j * 3] = p[j * 3] * alpha + t[j * 3] * (1 - alpha);
+			d[j * 3 + 1] = p[j * 3 + 1] * alpha + t[j * 3 + 1] * (1 - alpha);
+			d[j * 3 + 2] = p[j * 3 + 2] * alpha + t[j * 3 + 2] * (1 - alpha);
 
-			dst.at<uchar>(i, j * 3) = 100;
-			dst.at<uchar>(i, j * 3 + 1) = 100;
-			dst.at<uchar>(i, j * 3 + 2) = 100;
+			//dst.at<uchar>(i, j * 3) = 100;
+			//dst.at<uchar>(i, j * 3 + 1) = 100;
+			//dst.at<uchar>(i, j * 3 + 2) = 100;
 
 		}
 	}
