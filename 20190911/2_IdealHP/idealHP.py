@@ -7,6 +7,10 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
+"""
+理想高通滤波器
+"""
+
 #读取图像
 img = cv.imread('test.bmp', 0)
 

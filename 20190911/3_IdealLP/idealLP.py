@@ -22,14 +22,15 @@ def idealLP(img, w, h):
 
 # 读取图像
 img = cv2.imread('test.bmp', 0)
+print(img.shape)
 
 # 傅里叶变换
 # dft = cv2.dft(np.float32(img), flags = cv2.DFT_COMPLEX_OUTPUT)
 dft = np.fft.fft2(img)
 fshift = np.fft.fftshift(dft)
 
-# 设置低通滤波器
-mask = idealLP(img, 60, 60)
+# 生成低通滤波器
+mask = idealLP(img, 200, 200)
 
 # 滤波器和频谱图像乘积
 print(fshift.shape)
@@ -42,6 +43,10 @@ ishift = np.fft.ifftshift(f)
 d_shift = np.array(np.dstack([ishift.real,ishift.imag]))
 iimg = cv2.idft(d_shift)
 res = cv2.magnitude(iimg[:,:,0], iimg[:,:,1])
+
+# cv2.imwrite('res.bmp', res)
+# cv2.imwrite('dst.bmp', iimg)
+plt.imsave('dst.png', res)
 
 # 显示原始图像和低通滤波处理图像
 plt.subplot(121), plt.imshow(img, 'gray'), plt.title('Original Image')
