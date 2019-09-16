@@ -6,7 +6,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from GaussianBand import GaussianBand
-
+from ButterworthBand import ButterworthBand
+from IdealBand import IdealBand
 
 if __name__ == "__main__":
     src = cv2.imread('test.bmp', 0)
@@ -28,8 +29,10 @@ if __name__ == "__main__":
     plt.axis('off')
 
     # 生成带阻滤波器
-    g = GaussianBand() #高斯带通带阻滤波器
-    mask = g.generate(fshift, 10, 5)
+    # filter = GaussianBand() # 高斯带通带阻滤波器
+    # filter = ButterworthBand()  # 巴特沃斯带通带阻滤波器
+    filter = IdealBand()  # 理想带通带阻滤波器
+    mask = filter.generate(fshift, 10, 5)
 
     fshiftdst = mask * fshift
 
