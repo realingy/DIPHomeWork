@@ -19,10 +19,12 @@ for i, imagePath in enumerate(ip[:]):
     image = cv2.rotate(image, 2)   # 横向旋转，因为拼接对方向敏感
     images.append(image)
 
-
+import time
+a=time.time()
 print('stitching images...')
 stitcher = cv2.createStitcher() if imutils.is_cv3() else cv2.Stitcher_create()
 (status, stitched) = stitcher.stitch(images)
+print(time.time()-a)
 
 if status == 0:
     cv2.imwrite('res.png', stitched)
