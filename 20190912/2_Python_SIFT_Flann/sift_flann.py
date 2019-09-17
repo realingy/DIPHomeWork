@@ -74,7 +74,7 @@ def work(im1, im2):
     im3=M.appendimage(im1,im2)
     pts2_new=pts2_2.copy()
     for i in range(len(pts2_2)):
-        pts2_new[i,0]=pts2_new[i,0]+np.float32(b1.shape[1])
+        pts2_new[i,0]=pts2_new[i,0]+np.float32(im1.shape[1])
     for i in range(len(pts1_1)):
         cv2.line(im3,tuple(pts1_1[i]),tuple(pts2_new[i]),255,2)
 #    cv  cv2\Y\Desktop\45.jpg",result)
@@ -88,23 +88,23 @@ if __name__=="__main__":
     im1_=cv2.imread(r"left.png")
     im2_=cv2.imread(r"right.png")
 
-    # im1=cv2.cvtColor(im1_,cv2.COLOR_BGR2GRAY)
-    # im2=cv2.cvtColor(im2_,cv2.COLOR_BGR2GRAY)
+    im1=cv2.cvtColor(im1_,cv2.COLOR_BGR2GRAY)
+    im2=cv2.cvtColor(im2_,cv2.COLOR_BGR2GRAY)
 
     b1, g1, r1 = cv2.split(im1_)  # 分离函数
     b2, g2, r2 = cv2.split(im2_)  # 分离函数
-
     b = work(b1, b2)
     g = work(g1, g2)
     r = work(r1, r2)
     cv2.namedWindow("b", cv2.WINDOW_NORMAL)
     cv2.imshow("b", b)
-    cv2.namedWindow("g", cv2.WINDOW_NORMAL)
-    cv2.imshow("g", g)
-    cv2.namedWindow("r", cv2.WINDOW_NORMAL)
-    cv2.imshow("r", r)
+    # cv2.namedWindow("g", cv2.WINDOW_NORMAL)
+    # cv2.imshow("g", g)
+    # cv2.namedWindow("r", cv2.WINDOW_NORMAL)
+    # cv2.imshow("r", r)
+    # result = cv2.merge([b,g,r]) # 合并函数
 
-    # result = cv2.merge([b,g,r])
+    # result = work(im1, im2)
     # cv2.namedWindow("panorma", cv2.WINDOW_NORMAL)
     # cv2.imshow("panorma",result)
 
