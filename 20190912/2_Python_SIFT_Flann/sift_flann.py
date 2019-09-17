@@ -83,7 +83,6 @@ def work(im1, im2):
 
 
 if __name__=="__main__":
-    # M=macthing()
     # im1_=cv2.imread(r"left.jpg")
     # im2_=cv2.imread(r"right.jpg")
     im1_=cv2.imread(r"left.png")
@@ -104,20 +103,6 @@ if __name__=="__main__":
     cv2.imshow("g", g)
     cv2.namedWindow("r", cv2.WINDOW_NORMAL)
     cv2.imshow("r", r)
-
-
-#     sift=cv2.xfeatures2d.SIFT_create()
-#     kp1,des1=sift.detectAndCompute(b1,None)
-#     kp2,des2=sift.detectAndCompute(b2,None)
-#     pts1_1,pts2_2,H=M.matchIMG(b1,b2,kp1,kp2,des1,des2)
-#     im3=M.appendimage(b1,b2)
-#     pts2_new=pts2_2.copy()
-#     for i in range(len(pts2_2)):
-#         pts2_new[i,0]=pts2_new[i,0]+np.float32(b1.shape[1])
-#     for i in range(len(pts1_1)):
-#         cv2.line(im3,tuple(pts1_1[i]),tuple(pts2_new[i]),255,2)
-#    cv  cv2\Y\Desktop\45.jpg",result)
-#     result = M.panorama_get(b1, b2, H)
 
     # result = cv2.merge([b,g,r])
     # cv2.namedWindow("panorma", cv2.WINDOW_NORMAL)
