@@ -13,11 +13,11 @@ images = []
 
 
 for i, imagePath in enumerate(ip[:]):
-    # if i%2==0:   # 2为隔一张，不需要隔则设置为1即可
-    print(imagePath)
-    image = cv2.imread(imagePath)
-    image = cv2.rotate(image, 2)   # 横向旋转，因为拼接对方向敏感
-    images.append(image)
+    if i%2==0:   # 2为隔一张，不需要隔则设置为1即可
+        print(imagePath)
+        image = cv2.imread(imagePath)
+        image = cv2.rotate(image, 2)   # 横向旋转，因为拼接对方向敏感
+        images.append(image)
 
 import time
 a=time.time()
