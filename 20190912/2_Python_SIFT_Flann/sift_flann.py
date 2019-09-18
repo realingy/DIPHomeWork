@@ -14,7 +14,7 @@ class macthing(object):
         searth_p=dict(checks=50)
         flann=cv2.FlannBasedMatcher(index_p,searth_p)
         matches=flann.knnMatch(des1,des2,k=2)
-        good =[]
+        good=[]
         pts1=[]
         pts2=[]
         for i,(m,n) in enumerate(matches):
@@ -83,30 +83,30 @@ def work(im1, im2):
 
 
 if __name__=="__main__":
-    # im1_=cv2.imread(r"left.jpg")
-    # im2_=cv2.imread(r"right.jpg")
-    im1_=cv2.imread(r"left.png")
-    im2_=cv2.imread(r"right.png")
+    im1_=cv2.imread(r"left.jpg")
+    im2_=cv2.imread(r"right.jpg")
+    # im1_=cv2.imread(r"left.png")
+    # im2_=cv2.imread(r"right.png")
 
     im1=cv2.cvtColor(im1_,cv2.COLOR_BGR2GRAY)
     im2=cv2.cvtColor(im2_,cv2.COLOR_BGR2GRAY)
 
-    b1, g1, r1 = cv2.split(im1_)  # 分离函数
-    b2, g2, r2 = cv2.split(im2_)  # 分离函数
-    b = work(b1, b2)
-    g = work(g1, g2)
-    r = work(r1, r2)
-    cv2.namedWindow("b", cv2.WINDOW_NORMAL)
-    cv2.imshow("b", b)
+    # b1, g1, r1 = cv2.split(im1_)  # 分离函数
+    # b2, g2, r2 = cv2.split(im2_)  # 分离函数
+    # b = work(b1, b2)
+    # g = work(g1, g2)
+    # r = work(r1, r2)
+    # cv2.namedWindow("b", cv2.WINDOW_NORMAL)
+    # cv2.imshow("b", b)
     # cv2.namedWindow("g", cv2.WINDOW_NORMAL)
     # cv2.imshow("g", g)
     # cv2.namedWindow("r", cv2.WINDOW_NORMAL)
     # cv2.imshow("r", r)
     # result = cv2.merge([b,g,r]) # 合并函数
 
-    # result = work(im1, im2)
-    # cv2.namedWindow("panorma", cv2.WINDOW_NORMAL)
-    # cv2.imshow("panorma",result)
+    result = work(im1, im2)
+    cv2.namedWindow("panorma", cv2.WINDOW_NORMAL)
+    cv2.imshow("panorma",result)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
