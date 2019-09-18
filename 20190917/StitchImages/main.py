@@ -11,5 +11,7 @@ from stitch import Stitch
 
 if __name__=="__main__":
     S = Stitch()
-    S.work()
+    # S.work() # 图像拼接
+    src = cv2.imread("res.png")
+    S.affine(src) # 仿射处理
 
