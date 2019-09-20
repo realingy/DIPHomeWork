@@ -7,26 +7,48 @@
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-from imutils import paths
 import os
+import time
 
 class Stitch():
     def work(self):
-        file_path = "images"
+        file_path = "images/"
         path_list = os.listdir(file_path)
         # print(path_list)
         path_list.sort()
 
-        images = []
+        names = []
         for imagePath in path_list:
-            i = path_list.index(imagePath)
-            if i % 2 == 0:  # 2为隔一张，不需要隔则设置为1即可
-                print(imagePath)
-                image = cv.imread(imagePath)
-                images.append(image)
+            names.append("images/"+imagePath)
+
+        img0 = cv.imread(names[0])
+        img1 = cv.imread(names[1])
+
+        print("==============================Start stitching===============================")
+        print("stitching ", path_list[1])
+        a = time.time()
+        ret = self.StitchTwo(img0, img1)
+        print("interval: ", time.time()-a)
+
+        for i in range(2, 5):
+            print("stitching ", path_list[i])
+            img = cv.imread(names[i])
+            rows1, cols1 = ret.shape[:2]
+            rows2, cols2 = img.shape[:2]
+            h = rows1 - rows2
+            w = cols1 - cols2
+            # print('h:', h, 'w:', w)
+            top, bot, left, right = 0, h, 0, w
+            img = cv.copyMakeBorder(img, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+            ret = self.StitchTwo(ret, img)
+            print("interval: ", time.time() - a)
+
+        cv.imwrite('res.png', ret)
+        print("==============================End stitching===============================")
+
 
     def StitchTwo(self, img1, img2):
-        top, bot, left, right = 0, 350, 300, 0
+        top, bot, left, right = 0, 400, 300, 0
         srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
@@ -34,12 +56,12 @@ class Stitch():
         sift = cv.xfeatures2d_SIFT().create()
         # find the keypoints and descriptors with SIFT
         # 特征点检测
-        print("特征点检测")
+        # print("特征点检测")
         kp1, des1 = sift.detectAndCompute(img1gray, None)
         kp2, des2 = sift.detectAndCompute(img2gray, None)
         # FLANN parameters
         # 特征点匹配
-        print("特征点匹配")
+        # print("特征点匹配")
         FLANN_INDEX_KDTREE = 1
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)
@@ -48,7 +70,7 @@ class Stitch():
 
         # Need to draw only good matches, so create a mask
         # 模板
-        print("创建模板")
+        # print("创建模板")
         matchesMask = [[0, 0] for i in range(len(matches))]
 
         good = []
@@ -70,7 +92,7 @@ class Stitch():
         # cv.imshow('match', img3)
         plt.imshow(img3, ), plt.show()
 
-        print("图像拼接")
+        # print("图像拼接")
         rows, cols = srcImg.shape[:2]
         MIN_MATCH_COUNT = 10
         if len(good) > MIN_MATCH_COUNT:
@@ -108,7 +130,7 @@ class Stitch():
             # opencv is bgr, matplotlib is rgb
             res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
             # cv.imshow('res', res)
-            cv.imwrite('res.png', res)
+            # cv.imwrite('res.png', res)
             # show the result
             plt.figure()
             plt.imshow(res)
@@ -157,15 +179,15 @@ class Stitch():
 if __name__ == '__main__':
     # img1 = cv.imread('images/9.png')
     # img2 = cv.imread('images/10.png')
-    img1 = cv.imread('res_9_17.png')
-    img2 = cv.imread('images/18.png')
-    rows1, cols1 = img1.shape[:2]
-    rows2, cols2 = img2.shape[:2]
-    h = rows1 - rows2
-    w = cols1 - cols2
-    print('h:', h, 'w:', w)
-    top, bot, left, right = 0, h, 0, w
-    img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+    # img1 = cv.imread('res_9_17.png')
+    # img2 = cv.imread('images/18.png')
+    # rows1, cols1 = img1.shape[:2]
+    # rows2, cols2 = img2.shape[:2]
+    # h = rows1 - rows2
+    # w = cols1 - cols2
+    # print('h:', h, 'w:', w)
+    # top, bot, left, right = 0, h, 0, w
+    # img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
     S = Stitch()
     # S.StitchTwo(img1, img2)
     S.work()
