@@ -16,10 +16,6 @@ class Stitch():
         top, bot, left, right = 100, 100, 0, 500
         srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
-        rows0, cols0 = img1.shape[:2]
-        rows, cols = srcImg.shape[:2]
-        print("0000000=", rows0, cols0)
-        print("0000000=", rows, cols)
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
         sift = cv.xfeatures2d_SIFT().create()
@@ -76,31 +72,21 @@ class Stitch():
                     right = col
                     break
 
-            # 目标图应该是大一号的图，笨方法乘以1.5
-            offrow = 0 # rows // 4
-            offcol = 0 # cols // 4
-            res = np.zeros([int(rows*1), int(cols*1), 3], np.uint8)
-            print("1111111=", rows, cols, res.shape)
+            res = np.zeros([rows, cols, 3], np.uint8)
             for row in range(0, rows):
                 for col in range(0, cols):
                     if not srcImg[row, col].any():
-                        res[row+offrow, col+offcol] = warpImg[row, col]
+                        res[row, col] = warpImg[row, col]
                     elif not warpImg[row, col].any():
-                        res[row+offrow, col+offcol] = srcImg[row, col]
+                        res[row, col] = srcImg[row, col]
                     else:
                         srcImgLen = float(abs(col - left))
                         testImgLen = float(abs(col - right))
                         alpha = srcImgLen / (srcImgLen + testImgLen)
-                        res[row+offrow, col+offcol] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
-
-            print("2222222=", res.shape)
+                        res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
 
             # resuce black border
             res = self.ReduceBorder(res)
-
-            # 上采样进行复原
-            # res = cv.pyrUp(res)
-            # res = cv.pyrUp(res)
 
             # opencv is bgr, matplotlib is rgb
             res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
@@ -150,29 +136,15 @@ class Stitch():
         # plt.figure(), plt.imshow(res, ), plt.show()  # 显示裁剪图
         return res
 
-    # height = rows - 100
-    # width = cols - 500
-    # res = np.zeros([width, height, 3], np.uint8)
-    # for h in range(0, height):
-    #     for w in range(0, width):
-    #         print('h:', h, 'w:', w)
-    #         res[h, w] = img[h+100, w]
-
 
 if __name__ == '__main__':
-    # img1 = cv.imread('images/3.png')
-    # img2 = cv.imread('images/4.png')
-    img1 = cv.imread('res_1_2.png')
-    img2 = cv.imread('res_3_4.png')
-    img1 = cv.resize(img1, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
-    img2 = cv.resize(img2, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
-    # 下采样
-    # img1 = cv.pyrDown(img1)
-    # img2 = cv.pyrDown(img2)
-    # img1 = cv.pyrDown(img1)
-    # img2 = cv.pyrDown(img2)
+    img1 = cv.imread('images/1.png')
+    img2 = cv.imread('images/3.png')
+    # img1 = cv.imread('res_1_2.png')
+    # img2 = cv.imread('res_3_4.png')
+    # img1 = cv.resize(img1, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
+    # img2 = cv.resize(img2, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
     S = Stitch()
     S.StitchTwo(img1, img2)
-
 
 
