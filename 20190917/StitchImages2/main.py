@@ -16,6 +16,10 @@ class Stitch():
         top, bot, left, right = 100, 100, 0, 500
         srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        rows0, cols0 = img1.shape[:2]
+        rows, cols = srcImg.shape[:2]
+        print("0000000=", rows0, cols0)
+        print("0000000=", rows, cols)
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
         sift = cv.xfeatures2d_SIFT().create()
@@ -72,21 +76,31 @@ class Stitch():
                     right = col
                     break
 
-            # rows = rows + 200
-            newR = rows * 1.1
-            newC = cols * 1.1
-            res = np.zeros([rows, cols, 3], np.uint8)
+            # 目标图应该是大一号的图，笨方法乘以1.5
+            offrow = 0 # rows // 4
+            offcol = 0 # cols // 4
+            res = np.zeros([int(rows*1), int(cols*1), 3], np.uint8)
+            print("1111111=", rows, cols, res.shape)
             for row in range(0, rows):
                 for col in range(0, cols):
                     if not srcImg[row, col].any():
-                        res[row, col] = warpImg[row, col]
+                        res[row+offrow, col+offcol] = warpImg[row, col]
                     elif not warpImg[row, col].any():
-                        res[row, col] = srcImg[row, col]
+                        res[row+offrow, col+offcol] = srcImg[row, col]
                     else:
                         srcImgLen = float(abs(col - left))
                         testImgLen = float(abs(col - right))
                         alpha = srcImgLen / (srcImgLen + testImgLen)
-                        res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
+                        res[row+offrow, col+offcol] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
+
+            print("2222222=", res.shape)
+
+            # resuce black border
+            res = self.ReduceBorder(res)
+
+            # 上采样进行复原
+            # res = cv.pyrUp(res)
+            # res = cv.pyrUp(res)
 
             # opencv is bgr, matplotlib is rgb
             res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
@@ -101,12 +115,64 @@ class Stitch():
             print("Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT))
             matchesMask = None
 
+    # 裁剪黑边
+    def AutoReduceBorder(self, img):
+        rows, cols = img.shape[:2] # 原图尺寸
+        plt.imshow(img, ), plt.show() # 显示原图
+        h = 0 # 黑边的高
+        w = 0 # 黑边的宽
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # 转换成灰度图
+        # 垂直方向遍历
+        for row in range(0, rows):
+            px = gray[row, cols//2]
+            if(px == 0):
+                h = h + 1
+            else:
+                break
+        # 水平方向遍历
+        i = cols - 1
+        while i > 0:
+            px = gray[rows // 2, i]
+            if (px == 0):
+                w = w + 1
+                i = i - 1
+            else:
+                break
+        print("h = ", h) # 100
+        print("w = ", w) # 500
+        res = img[h+1:rows, 0:cols-w]
+        return res
+
+    def ReduceBorder(self, img):
+        rows, cols = img.shape[:2]  # 原图尺寸
+        # plt.imshow(img, ), plt.show() # 显示原图
+        res = img[101:rows, 0:cols-500]
+        # plt.figure(), plt.imshow(res, ), plt.show()  # 显示裁剪图
+        return res
+
+    # height = rows - 100
+    # width = cols - 500
+    # res = np.zeros([width, height, 3], np.uint8)
+    # for h in range(0, height):
+    #     for w in range(0, width):
+    #         print('h:', h, 'w:', w)
+    #         res[h, w] = img[h+100, w]
+
+
 if __name__ == '__main__':
-    # img1 = cv.imread('images/1.png')
-    # img2 = cv.imread('images/2.png')
-    img1 = cv.imread('images/6.png')
-    img2 = cv.imread('res.png')
+    # img1 = cv.imread('images/3.png')
+    # img2 = cv.imread('images/4.png')
+    img1 = cv.imread('res_1_2.png')
+    img2 = cv.imread('res_3_4.png')
+    img1 = cv.resize(img1, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
+    img2 = cv.resize(img2, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
+    # 下采样
+    # img1 = cv.pyrDown(img1)
+    # img2 = cv.pyrDown(img2)
+    # img1 = cv.pyrDown(img1)
+    # img2 = cv.pyrDown(img2)
     S = Stitch()
     S.StitchTwo(img1, img2)
+
 
 
