@@ -12,39 +12,41 @@ import time
 
 class Stitch():
     def work(self):
-        file_path = "images/"
-        path_list = os.listdir(file_path)
-        # print(path_list)
-        path_list.sort()
+        dir = "images/"
+        names = os.listdir(dir)
+        # print(names)
+        names.sort()
 
-        names = []
-        for imagePath in path_list:
-            names.append("images/"+imagePath)
+        paths = []
+        for name in names:
+            paths.append("images/"+name)
 
-        img0 = cv.imread(names[0])
-        img1 = cv.imread(names[1])
+        img0 = cv.imread(paths[0])
+        img1 = cv.imread(paths[1])
 
         print("==============================Start stitching===============================")
-        print("stitching ", path_list[1])
+        print("stitching ", names[1])
         a = time.time()
-        ret = self.StitchTwo(img0, img1)
+        res = self.StitchTwo(img0, img1)
         print("interval: ", time.time()-a)
 
-        for i in range(2, 5):
-            print("stitching ", path_list[i])
-            img = cv.imread(names[i])
-            rows1, cols1 = ret.shape[:2]
+        for i in range(2, 10):
+            print("stitching ", names[i])
+            b = time.time()
+            img = cv.imread(paths[i])
+            rows1, cols1 = res.shape[:2]
             rows2, cols2 = img.shape[:2]
             h = rows1 - rows2
             w = cols1 - cols2
             # print('h:', h, 'w:', w)
             top, bot, left, right = 0, h, 0, w
             img = cv.copyMakeBorder(img, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
-            ret = self.StitchTwo(ret, img)
-            print("interval: ", time.time() - a)
+            res = self.StitchTwo(res, img)
+            print("interval: ", time.time() - b)
 
-        cv.imwrite('res.png', ret)
+        cv.imwrite('res.png', res)
         print("==============================End stitching===============================")
+        print("Totla interval: ", time.time()-a)
 
 
     def StitchTwo(self, img1, img2):
@@ -55,13 +57,9 @@ class Stitch():
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
         sift = cv.xfeatures2d_SIFT().create()
         # find the keypoints and descriptors with SIFT
-        # 特征点检测
-        # print("特征点检测")
         kp1, des1 = sift.detectAndCompute(img1gray, None)
         kp2, des2 = sift.detectAndCompute(img2gray, None)
         # FLANN parameters
-        # 特征点匹配
-        # print("特征点匹配")
         FLANN_INDEX_KDTREE = 1
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)
@@ -69,8 +67,6 @@ class Stitch():
         matches = flann.knnMatch(des1, des2, k=2)
 
         # Need to draw only good matches, so create a mask
-        # 模板
-        # print("创建模板")
         matchesMask = [[0, 0] for i in range(len(matches))]
 
         good = []
@@ -89,10 +85,8 @@ class Stitch():
                            matchesMask=matchesMask,
                            flags=0)
         img3 = cv.drawMatchesKnn(img1gray, kp1, img2gray, kp2, matches, None, **draw_params)
-        # cv.imshow('match', img3)
-        plt.imshow(img3, ), plt.show()
+        # plt.imshow(img3, ), plt.show()
 
-        # print("图像拼接")
         rows, cols = srcImg.shape[:2]
         MIN_MATCH_COUNT = 10
         if len(good) > MIN_MATCH_COUNT:
@@ -128,33 +122,28 @@ class Stitch():
             # res = self.ReduceBorder(res)
 
             # opencv is bgr, matplotlib is rgb
-            res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
-            # cv.imshow('res', res)
-            # cv.imwrite('res.png', res)
+            # res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
             # show the result
-            plt.figure()
-            plt.imshow(res)
-            plt.show()
+            # plt.figure()
+            # plt.imshow(res)
+            # plt.show()
             return res
         else:
             print("Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT))
             matchesMask = None
 
-    # 裁剪黑边
     def AutoReduceBorder(self, img):
-        rows, cols = img.shape[:2] # 原图尺寸
-        plt.imshow(img, ), plt.show() # 显示原图
-        h = 0 # 黑边的高
-        w = 0 # 黑边的宽
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # 转换成灰度图
-        # 垂直方向遍历
+        rows, cols = img.shape[:2]
+        plt.imshow(img, ), plt.show()
+        h = 0
+        w = 0
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         for row in range(0, rows):
             px = gray[row, cols//2]
             if(px == 0):
                 h = h + 1
             else:
                 break
-        # 水平方向遍历
         i = cols - 1
         while i > 0:
             px = gray[rows // 2, i]
@@ -163,33 +152,19 @@ class Stitch():
                 i = i - 1
             else:
                 break
-        print("h = ", h) # 100
-        print("w = ", w) # 500
+        print("h = ", h)
+        print("w = ", w)
         res = img[h+1:rows, 0:cols-w]
         return res
 
     def ReduceBorder(self, img):
-        rows, cols = img.shape[:2]  # 原图尺寸
-        # plt.imshow(img, ), plt.show() # 显示原图
+        rows, cols = img.shape[:2]
         res = img[101:rows, 0:cols-500]
-        # plt.figure(), plt.imshow(res, ), plt.show()  # 显示裁剪图
         return res
 
 
 if __name__ == '__main__':
-    # img1 = cv.imread('images/9.png')
-    # img2 = cv.imread('images/10.png')
-    # img1 = cv.imread('res_9_17.png')
-    # img2 = cv.imread('images/18.png')
-    # rows1, cols1 = img1.shape[:2]
-    # rows2, cols2 = img2.shape[:2]
-    # h = rows1 - rows2
-    # w = cols1 - cols2
-    # print('h:', h, 'w:', w)
-    # top, bot, left, right = 0, h, 0, w
-    # img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
     S = Stitch()
-    # S.StitchTwo(img1, img2)
     S.work()
 
 
