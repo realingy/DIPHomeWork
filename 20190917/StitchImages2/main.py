@@ -7,13 +7,26 @@
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
+from imutils import paths
+import os
 
 class Stitch():
     def work(self):
-        print("work")
+        file_path = "images"
+        path_list = os.listdir(file_path)
+        # print(path_list)
+        path_list.sort()
+
+        images = []
+        for imagePath in path_list:
+            i = path_list.index(imagePath)
+            if i % 2 == 0:  # 2为隔一张，不需要隔则设置为1即可
+                print(imagePath)
+                image = cv.imread(imagePath)
+                images.append(image)
 
     def StitchTwo(self, img1, img2):
-        top, bot, left, right = 100, 100, 0, 500
+        top, bot, left, right = 0, 350, 300, 0
         srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
@@ -21,10 +34,12 @@ class Stitch():
         sift = cv.xfeatures2d_SIFT().create()
         # find the keypoints and descriptors with SIFT
         # 特征点检测
+        print("特征点检测")
         kp1, des1 = sift.detectAndCompute(img1gray, None)
         kp2, des2 = sift.detectAndCompute(img2gray, None)
         # FLANN parameters
         # 特征点匹配
+        print("特征点匹配")
         FLANN_INDEX_KDTREE = 1
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)
@@ -33,6 +48,7 @@ class Stitch():
 
         # Need to draw only good matches, so create a mask
         # 模板
+        print("创建模板")
         matchesMask = [[0, 0] for i in range(len(matches))]
 
         good = []
@@ -54,6 +70,7 @@ class Stitch():
         # cv.imshow('match', img3)
         plt.imshow(img3, ), plt.show()
 
+        print("图像拼接")
         rows, cols = srcImg.shape[:2]
         MIN_MATCH_COUNT = 10
         if len(good) > MIN_MATCH_COUNT:
@@ -86,7 +103,7 @@ class Stitch():
                         res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
 
             # resuce black border
-            res = self.ReduceBorder(res)
+            # res = self.ReduceBorder(res)
 
             # opencv is bgr, matplotlib is rgb
             res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
@@ -138,13 +155,19 @@ class Stitch():
 
 
 if __name__ == '__main__':
-    img1 = cv.imread('images/1.png')
-    img2 = cv.imread('images/3.png')
-    # img1 = cv.imread('res_1_2.png')
-    # img2 = cv.imread('res_3_4.png')
-    # img1 = cv.resize(img1, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
-    # img2 = cv.resize(img2, (0,0), fx=0.25, fy=0.25, interpolation=cv.INTER_NEAREST)
+    # img1 = cv.imread('images/9.png')
+    # img2 = cv.imread('images/10.png')
+    img1 = cv.imread('res_9_17.png')
+    img2 = cv.imread('images/18.png')
+    rows1, cols1 = img1.shape[:2]
+    rows2, cols2 = img2.shape[:2]
+    h = rows1 - rows2
+    w = cols1 - cols2
+    print('h:', h, 'w:', w)
+    top, bot, left, right = 0, h, 0, w
+    img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
     S = Stitch()
-    S.StitchTwo(img1, img2)
+    # S.StitchTwo(img1, img2)
+    S.work()
 
 
