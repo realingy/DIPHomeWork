@@ -11,46 +11,58 @@ import os
 import time
 
 class Stitch():
-    def work(self):
+
+    names=[]
+    paths=[]
+
+    def __init__(self):
         dir = "images/"
-        names = os.listdir(dir)
+        self.names = os.listdir(dir)
         # print(names)
-        names.sort()
+        self.names.sort()
 
-        paths = []
-        for name in names:
-            paths.append("images/"+name)
+        for name in self.names:
+            self.paths.append("images/" + name)
 
-        img0 = cv.imread(paths[0])
-        img1 = cv.imread(paths[1])
+    def work(self):
+        # res1 = self.stitch(0, 12, 400, 300)
+        # cv.imwrite('res_0_11.png', res1)
+        # res2 = self.stitch(12, 24, 400, 300)
+        # cv.imwrite('res_12_23.png', res2)
+        res1 = cv.imread('res_0_11.png')
+        res2 = cv.imread('res_12_23.png')
+        res = self.stitchtwo(res1, res2, 3300, 5500)
+        cv.imwrite('res_0_23.png', res)
+
+    def stitch(self, start, end, addheight, addwidth):
+        img0 = cv.imread(self.paths[start])
+        img1 = cv.imread(self.paths[start+1])
 
         print("==============================Start stitching===============================")
-        print("stitching ", names[1])
+        print("stitching ", self.names[start+1])
         a = time.time()
-        res = self.StitchTwo(img0, img1)
-        print("interval: ", time.time()-a)
+        res = self.stitchtwo(img0, img1, addheight, addwidth)
 
-        for i in range(2, 10):
-            print("stitching ", names[i])
-            b = time.time()
-            img = cv.imread(paths[i])
-            rows1, cols1 = res.shape[:2]
-            rows2, cols2 = img.shape[:2]
-            h = rows1 - rows2
-            w = cols1 - cols2
-            # print('h:', h, 'w:', w)
-            top, bot, left, right = 0, h, 0, w
-            img = cv.copyMakeBorder(img, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
-            res = self.StitchTwo(res, img)
-            print("interval: ", time.time() - b)
+        for i in range(start+2, end):
+            print("stitching ", self.names[i])
+            img = cv.imread(self.paths[i])
+            res = self.stitchtwo(res, img, addheight, addwidth)
 
-        cv.imwrite('res.png', res)
         print("==============================End stitching===============================")
         print("Totla interval: ", time.time()-a)
+        return res
 
-
-    def StitchTwo(self, img1, img2):
-        top, bot, left, right = 0, 400, 300, 0
+    def stitchtwo(self, img1, img2, addheight, addwidth):
+        a = time.time()
+        # size matches
+        rows1, cols1 = img1.shape[:2]
+        rows2, cols2 = img2.shape[:2]
+        h = rows1 - rows2
+        w = cols1 - cols2
+        if(h > 0 or w > 0):
+            top, bot, left, right = 0, h, 0, w
+            img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        top, bot, left, right = 0, addheight, addwidth, 0
         srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
@@ -80,11 +92,12 @@ class Stitch():
                 pts1.append(kp1[m.queryIdx].pt)
                 matchesMask[i] = [1, 0]
 
-        draw_params = dict(matchColor=(0, 255, 0),
-                           singlePointColor=(255, 0, 0),
-                           matchesMask=matchesMask,
-                           flags=0)
-        img3 = cv.drawMatchesKnn(img1gray, kp1, img2gray, kp2, matches, None, **draw_params)
+        # draw matches
+        # draw_params = dict(matchColor=(0, 255, 0),
+        #                    singlePointColor=(255, 0, 0),
+        #                    matchesMask=matchesMask,
+        #                    flags=0)
+        # img3 = cv.drawMatchesKnn(img1gray, kp1, img2gray, kp2, matches, None, **draw_params)
         # plt.imshow(img3, ), plt.show()
 
         rows, cols = srcImg.shape[:2]
@@ -124,9 +137,8 @@ class Stitch():
             # opencv is bgr, matplotlib is rgb
             # res = cv.cvtColor(res, cv.COLOR_BGR2RGB)
             # show the result
-            # plt.figure()
-            # plt.imshow(res)
-            # plt.show()
+            # plt.figure(), plt.imshow(res), plt.show()
+            print("interval: ", time.time() - a)
             return res
         else:
             print("Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT))
@@ -166,5 +178,9 @@ class Stitch():
 if __name__ == '__main__':
     S = Stitch()
     S.work()
+    # img0 = cv.imread('res_0_9.png')
+    # img1 = cv.imread('res_10_20.png')
+    # S.StitchTwo(img0, img1)
+
 
 
