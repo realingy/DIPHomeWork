@@ -25,14 +25,19 @@ class Stitch():
             self.paths.append("images/" + name)
 
     def work(self):
-        # res1 = self.stitch(0, 12, 400, 300)
-        # cv.imwrite('res_0_11.png', res1)
-        # res2 = self.stitch(12, 24, 400, 300)
-        # cv.imwrite('res_12_23.png', res2)
-        res1 = cv.imread('res_0_11.png')
-        res2 = cv.imread('res_12_23.png')
-        res = self.stitchtwo(res1, res2, 3300, 5500)
-        cv.imwrite('res_0_23.png', res)
+        length = len(self.names)
+        res1 = self.stitch(0, 2, 400, 300)
+        cv.imwrite('res.png', res1)
+        # res1 = self.stitch(0, length//2, 400, 300)
+        # cv.imwrite('res1.png', res1)
+        # res2 = self.stitch(length//2, length, 400, 300)
+        # cv.imwrite('res2.png', res2)
+        # res = self.stitchtwo(res1, res2, 3300, 5500)
+        # cv.imwrite('res_0_23.png', res)
+
+        # res1 = cv.imread('1.jpg')
+        # res2 = cv.imread('2.jpg')
+        # res = self.stitchtwo(res1, res2, 100, 500)
 
     def stitch(self, start, end, addheight, addwidth):
         img0 = cv.imread(self.paths[start])
@@ -67,6 +72,8 @@ class Stitch():
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
+        # img1grayROI = img1gray[0:rows1, w: ]
+        # img2grayROI = img2gray[0:rows2, w: ]
         sift = cv.xfeatures2d_SIFT().create()
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1gray, None)
@@ -86,7 +93,8 @@ class Stitch():
         pts2 = []
         # ratio test as per Lowe's paper
         for i, (m, n) in enumerate(matches):
-            if m.distance < 0.7 * n.distance:
+            # if m.distance < 0.7 * n.distance:
+            if m.distance < 0.5 * n.distance:
                 good.append(m)
                 pts2.append(kp2[m.trainIdx].pt)
                 pts1.append(kp1[m.queryIdx].pt)
@@ -121,15 +129,21 @@ class Stitch():
             res = np.zeros([rows, cols, 3], np.uint8)
             for row in range(0, rows):
                 for col in range(0, cols):
-                    if not srcImg[row, col].any():
-                        res[row, col] = warpImg[row, col]
-                    elif not warpImg[row, col].any():
+                    # if not srcImg[row, col].any():
+                    #     res[row, col] = warpImg[row, col]
+                    # elif not warpImg[row, col].any():
+                    #     res[row, col] = srcImg[row, col]
+                    # else:
+                    #     # srcImgLen = float(abs(col - left))
+                    #     # testImgLen = float(abs(col - right))
+                    #     # alpha = srcImgLen / (srcImgLen + testImgLen)
+                    #     # res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
+                    #     res[row, col] = warpImg[row, col]
+
+                    if not warpImg[row, col].any():
                         res[row, col] = srcImg[row, col]
                     else:
-                        srcImgLen = float(abs(col - left))
-                        testImgLen = float(abs(col - right))
-                        alpha = srcImgLen / (srcImgLen + testImgLen)
-                        res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
+                        res[row, col] = warpImg[row, col]
 
             # resuce black border
             # res = self.ReduceBorder(res)
