@@ -36,6 +36,23 @@ int main()
 	Mat left = imread( MediaPath + "SIFT/left.jpg", 1);
 	Mat right = imread( MediaPath + "SIFT/right.jpg", 1);
 
+#if 0
+	Mat left(left_.rows + 400, left_.cols + 200, CV_8UC3);
+	Mat right(right_.rows + 400, right_.cols + 200, CV_8UC3);
+	//Mat left();
+	//Mat right();
+
+	int borderType = BORDER_REPLICATE;
+	RNG rng(12345);
+	Scalar value = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+	int addtop = 200;
+	int addbottom = 200;
+	int addleft = 100;
+	int addright = 100;
+	copyMakeBorder(left_, left, addtop, addbottom, addleft, addright, borderType, value);
+	copyMakeBorder(right_, right, addtop, addbottom, addleft, addright, borderType, value);
+#endif
+
 	//imshow("left", left);
 	//imshow("right", right);
 
@@ -97,12 +114,6 @@ int main()
 	//warpPerspective(left, imageTransform2, adjustMat*homo, Size(b.cols*1.3, b.rows*1.8));
 	//imshow("旋转效果", imageWrap);
 //	imwrite("sift_trans.jpg", imageTransform1);
-
-	/////////////////////////////////////////////////////////////////////////
-	//int borderType = BORDER_REPLICATE;
-	//RNG rng(12345);
-	//Scalar value = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-	//copyMakeBorder(srcImage, dstImage, g_top, g_bottom, g_left, g_right, borderType, value);
 
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;  //取最右点的长度为拼接图的长度
