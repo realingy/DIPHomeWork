@@ -6,3 +6,4 @@ project(StitchImages)
 include_directories(${CMAKE_SOURCE_DIR}/..)
 
 add_subdirectory(StitchImages)
+add_subdirectory(SurfStitch)
