@@ -80,12 +80,8 @@ void CalcCorners(const Mat& H, const Mat& src)
 
 int main(int argc, char *argv[])
 {
-	//Mat image01 = imread("g5.jpg", 1);    //右图
-	//Mat image02 = imread("g4.jpg", 1);    //左图
-	Mat image02 = imread( MediaPath + "SIFT/left.jpg", 1);
 	Mat image01 = imread( MediaPath + "SIFT/right.jpg", 1);
-	//imshow("p2", image01);
-	//imshow("p1", image02);
+	Mat image02 = imread( MediaPath + "SIFT/left.jpg", 1);
 
 	//灰度图转换  
 	Mat image1, image2;
@@ -93,22 +89,12 @@ int main(int argc, char *argv[])
 	cvtColor(image02, image2, CV_RGB2GRAY);
 
 	//提取特征点    
-	//SurfFeatureDetector Detector(2000);
 	Ptr<SurfFeatureDetector> Detector;
 	Detector = SURF::create(2000);
 	vector<KeyPoint> keyPoint1, keyPoint2;
 	Mat imageDesc1, imageDesc2;
 	Detector->detectAndCompute(image01, Mat(), keyPoint1, imageDesc1); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	Detector->detectAndCompute(image02, Mat(), keyPoint2, imageDesc2); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-
-	//Detector.detect(image1, keyPoint1);
-	//Detector.detect(image2, keyPoint2);
-
-	//特征点描述，为下边的特征点匹配做准备    
-	// SurfDescriptorExtractor Descriptor;
-	// Mat imageDesc1, imageDesc2;
-	// Descriptor.compute(image1, keyPoint1, imageDesc1);
-	// Descriptor.compute(image2, keyPoint2, imageDesc2);
 
 	FlannBasedMatcher matcher;
 	vector<vector<DMatch> > matchePoints;
@@ -157,7 +143,8 @@ int main(int argc, char *argv[])
 
 	//图像配准  
 	Mat imageTransform1, imageTransform2;
-	warpPerspective(image01, imageTransform1, homo, Size(MAX(corners.right_top.x, corners.right_bottom.x), image02.rows * 2));
+	warpPerspective(image01, imageTransform1, homo, Size(MIN(corners.right_top.x, corners.right_bottom.x), image02.rows * 1.5));
+	//warpPerspective(image01, imageTransform1, homo, Size(corners.right_bottom.x, image02.rows * 1.5));
 	//warpPerspective(image01, imageTransform2, adjustMat*homo, Size(image02.cols*1.3, image02.rows*1.8));
 	//imshow("直接经过透视矩阵变换", imageTransform1);
 	//imwrite("trans1.jpg", imageTransform1);
