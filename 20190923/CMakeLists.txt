@@ -7,3 +7,4 @@ include_directories(${CMAKE_SOURCE_DIR}/..)
 
 add_subdirectory(SiftStitch)
 add_subdirectory(SurfStitch)
+add_subdirectory(Stitcher)
