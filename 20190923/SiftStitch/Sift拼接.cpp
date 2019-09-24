@@ -46,11 +46,14 @@ void stitch()
 
 	//Mat img0 = images[0];
 	//Mat img1 = images[1];
-	Mat img0 = imread("res_0_3.png");
-	Mat img1 = imread("images/04.png");
+
+	Mat img0 = imread("res_0_1.png");
+	//Mat img0 = imread("images/00.png");
+	Mat img1 = imread("images/02.png");
 
 	//cout << "stitching \"" << paths[1] << "\" ";
-	Mat dst = stitchTwo(img0, img1);
+	//Mat dst = stitchTwo(img0, img1);
+	Mat dst = doStitchTwo(img0, img1);
 
 #if 0
 	int count = images.size();
@@ -69,7 +72,7 @@ void stitch()
 	cout << "stitching end, total interval: " << interval << endl;
 
 	//string name = "res_0_" +paths.size()+ ".png";
-	//imwrite("res.png", dst);
+	imwrite("res.png", dst);
 
 	waitKey(0);
 }
@@ -81,36 +84,33 @@ int main()
 	return 0;
 }
 
+Mat findROI(Mat src, int w, int h)
+{
+	//Mat res = src(Rect(0, 0.25 * h , w, h)); // 00+01
+	Mat res = src(Rect(0, 500, w, h)); // 00+01
+	//Mat res = src(Rect(500, 1200, w, h)); // res_0_3+04
+	namedWindow("roi", WINDOW_NORMAL);
+	imshow("roi", res);
+	return res;
+}
+
 Mat stitchTwo(Mat & img1, Mat & img2)
 {
-	Mat img1roi = img1(Rect(500, 1200, img2.cols, img2.rows));
-	namedWindow("img1roi", WINDOW_NORMAL);
-	imshow("img1roi", img1roi);
+	int width = img2.cols;
+	int height = img2.rows;
+	Mat img1roi = findROI(img1, width, height);
 
-	//cout << "stitching \"" << paths[1] << "\" ";
 	Mat temp = doStitchTwo(img1roi, img2);
 
-	//namedWindow("拼接效果", WINDOW_NORMAL);
-	//imshow("拼接效果", temp);
+	Mat dst;
+	int addwidth = 400;
+	int addheight = 0.3 * (height+100);
+	copyMakeBorder(img1, dst, 0, addheight, addwidth, 0, 0, Scalar(0, 0, 0));
 
-	int dst_height = img1.rows + 200;
-	int dst_width = img1.cols + 200;
-	Mat dst(dst_height, dst_width, CV_8UC3);
-	dst.setTo(0);
-
-	int hx = temp.rows - img2.rows;
-	int wx = temp.cols - img2.cols;
-	temp.copyTo(dst(Rect(700 - wx, 1200, temp.cols, temp.rows)));
-
-	Mat img1_;
-	copyMakeBorder(img1, img1_, 0, 200, 200, 0, 0, Scalar(0, 0, 0));
-	for (int i = 1; i < dst_height; ++i) {
-		for (int j = 1; j < dst_width; ++j) {
-			if (dst.at<Vec3b>(i, j)[0] == 0 && img1_.at<Vec3b>(i, j)[0] != 0) {
-				dst.at<Vec3b>(i, j) = img1_.at<Vec3b>(i, j);
-			}
-		}
-	}
+	int hx = temp.rows - height;
+	int wx = temp.cols - width;
+	//temp.copyTo(dst(Rect(700 - wx, 1200, temp.cols, temp.rows)));
+	temp.copyTo(dst(Rect(0, 500, temp.cols, temp.rows)));
 
 	return dst;
 }
@@ -137,13 +137,13 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	int addleft = 500;
 	//int addright = 0;
 	//cout << "addw: " << addw << "addh: " << addh << endl;
-	copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
-	int h = imageMatch.rows * 0.2;
-	copyMakeBorder(img1, imageSrc, 0, addbottom + h, addleft, 0, 0, Scalar(0, 0, 0));
+	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img2, imageMatch, 0, addbottom + addh, addleft + addw, 0, 0, Scalar(0, 0, 0));
+	int h = imageMatch.rows * 0.25;
+	copyMakeBorder(img1, imageSrc, 0, addbottom+h, addleft, 0, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	sift = SIFT::create(800);
-
 
 	BFMatcher matcher; //实例化一个暴力匹配器
 	Mat key_left, key_right;
@@ -157,7 +157,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 
-	drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
+	//drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
 
 	timeCounter(begin);
 
@@ -234,6 +234,9 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	//time_t end = clock();
 	//double interval = double(end - begin) / CLOCKS_PER_SEC;
 	//cout << "interval: " << interval << endl;
+
+	namedWindow("临时拼接效果", WINDOW_NORMAL);
+	imshow("临时拼接效果", dst);
 
 	return dst;
 }
