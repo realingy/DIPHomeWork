@@ -11,8 +11,7 @@
 using namespace std;
 using namespace cv;
 
-
-bool try_use_gpu = false;
+bool try_use_gpu = true;
 vector<Mat> imgs;
 string result_name = "dst1.jpg";
 string MediaPath = "images";
@@ -25,7 +24,7 @@ int main(int argc, char * argv[])
 	time_t begin = clock();
 
 	imgs = read_images_in_folder(MediaPath);
-	cout << "###" << imgs.size() << endl;
+	//cout << "###" << imgs.size() << endl;
 
     Stitcher stitcher = Stitcher::createDefault(try_use_gpu);
     // 使用stitch函数进行拼接
@@ -51,7 +50,6 @@ int main(int argc, char * argv[])
         return 0;
 }
 
-
 vector<Mat> read_images_in_folder(cv::String pattern)
 {
 	vector<cv::String> paths;
@@ -60,9 +58,11 @@ vector<Mat> read_images_in_folder(cv::String pattern)
 	vector<Mat> images;
 	//size_t count = fn.size(); //number of png files in images folder
 	//for (size_t i = 0; i < count; i++)
+	Mat img;
 	for ( auto path : paths )
 	{
-		images.push_back(imread(path));
+		img = imread(path);
+		images.push_back(img);
 		//imshow("img", imread(fn[i]));
 		//waitKey(1000);
 	}
