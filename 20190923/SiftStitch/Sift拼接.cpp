@@ -11,7 +11,8 @@
 #include "opencv2/xfeatures2d.hpp"  
 #include "opencv2/ml.hpp" 
 #include <opencv2/core.hpp>
-#include "path.h"
+#include <ctime>
+//#include "path.h"
 
 using namespace cv;
 using namespace std;
@@ -33,25 +34,29 @@ four_corners_t corners;
 
 int main()
 {
-	Mat left = imread( MediaPath + "SIFT/left.jpg", 1);
-	Mat right = imread( MediaPath + "SIFT/right.jpg", 1);
+	//Mat left = imread("SIFT/left.jpg", 1);
+	//Mat right = imread("SIFT/right.jpg", 1);
+	cout << "stitch start!\n";
+	time_t begin = clock();
 
-#if 0
-	Mat left(left_.rows + 400, left_.cols + 200, CV_8UC3);
-	Mat right(right_.rows + 400, right_.cols + 200, CV_8UC3);
+	Mat left_ = imread("00.png");
+	Mat right_ = imread("01.png");
+
+	Mat left; // (left_.rows + 400, left_.cols + 200, CV_8UC3);
+	Mat right; // (right_.rows + 400, right_.cols + 200, CV_8UC3);
 	//Mat left();
 	//Mat right();
 
-	int borderType = BORDER_REPLICATE;
-	RNG rng(12345);
-	Scalar value = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-	int addtop = 200;
-	int addbottom = 200;
-	int addleft = 100;
-	int addright = 100;
-	copyMakeBorder(left_, left, addtop, addbottom, addleft, addright, borderType, value);
-	copyMakeBorder(right_, right, addtop, addbottom, addleft, addright, borderType, value);
-#endif
+	//int borderType = BORDER_REPLICATE;
+	//RNG rng(12345);
+	//Scalar value = Scalar(rng.uniform(0, 0), rng.uniform(0, 0), rng.uniform(0, 0));
+	int addtop = 1;
+	int addbottom = 100;
+	int addleft = 500;
+	int addright = 1;
+	copyMakeBorder(right_, right, addtop, addbottom, addleft, addright, 0, Scalar(0, 0, 0));
+	int h = right.rows * 0.2;
+	copyMakeBorder(left_, left, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	//imshow("left", left);
 	//imshow("right", right);
@@ -75,7 +80,8 @@ int main()
 	//sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
 	vector<DMatch> good_matches;
-	int ptsPairs = std::min(50, (int)(matches.size() * 0.15));
+	//int ptsPairs = std::min(50, (int)(matches.size() * 0.15));
+	int ptsPairs = std::min(100, (int)(matches.size() * 0.15));
 	cout << ptsPairs << endl;
 	for (int i = 0; i < ptsPairs; i++)
 	{
@@ -84,7 +90,8 @@ int main()
 
 	Mat outimg; //drawMatches这个函数直接画出摆在一起的图
 	drawMatches(right, key1, left, key1, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
-	//imshow("特征匹配效果", outimg);
+	// namedWindow("特征匹配效果", WINDOW_NORMAL);
+	// imshow("特征匹配效果", outimg);
 
 	//计算图像配准点
 	vector<Point2f> imagePoints1, imagePoints2;
@@ -98,7 +105,7 @@ int main()
 	//获取图像1到图像2的投影映射矩阵 尺寸为3*3  
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
 	//也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
-	//Mat   homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
+	//Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
 	cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
 
 	//计算配准图的四个顶点坐标
@@ -110,10 +117,12 @@ int main()
 
 	//图像配准  
 	Mat imageWrap; // , imageTransform2;
-	warpPerspective(right, imageWrap, homo, Size(MAX(corners.right_top.x, corners.right_bottom.x), right.rows * 1.5)); //透视变换
+	//warpPerspective(right, imageWrap, homo, Size(MAX(corners.right_top.x, corners.right_bottom.x), right.rows * 1.5)); //透视变换
+	warpPerspective(right, imageWrap, homo, Size(right.cols, right.rows * 1.2)); //透视变换
 	//warpPerspective(left, imageTransform2, adjustMat*homo, Size(b.cols*1.3, b.rows*1.8));
-	//imshow("旋转效果", imageWrap);
-//	imwrite("sift_trans.jpg", imageTransform1);
+	namedWindow("旋转效果", WINDOW_NORMAL);
+	imshow("旋转效果", imageWrap);
+	//imwrite("sift_trans.png", imageWrap);
 
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;  //取最右点的长度为拼接图的长度
@@ -122,14 +131,38 @@ int main()
 	Mat dst(dst_height, dst_width, CV_8UC3);
 	dst.setTo(0);
 
-	imageWrap.copyTo(dst(Rect(0, 0, imageWrap.cols, imageWrap.rows)));
-	left.copyTo(dst(Rect(0, 0, left.cols, left.rows)));
+	cout << "w: " << dst_width << "h: " << dst_height << endl;
+	cout << "w: " << left.cols << "h: " << left.rows << endl;
+	//int h = dst_height - left.rows;
 
-	//imshow("拼接效果", dst);
-	imwrite(MediaPath + "SIFT/dst.jpg", dst);
+#if 1
+	for (int i = 1; i < dst.rows; ++i) {
+		for (int j = 1; j < dst.cols; ++j) {
+			//if (left.at<uchar>(i, j) != 0)
+			if(left.at<Vec3b>(i, j)[0] != 0)
+				//dst.at<uchar>(i, j) = left.at<uchar>(i, j);
+				dst.at<Vec3b>(i, j) = left.at<Vec3b>(i, j);
+			else
+				//dst.at<uchar>(i, j) = imageWrap.at<uchar>(i, j);
+				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
+		}
+	}
+#endif
+	//imageWrap.copyTo(dst(Rect(0, 0, imageWrap.cols, imageWrap.rows)));
+	//left.copyTo(dst(Rect(0, 0, imageWrap.cols, imageWrap.rows)));
+
+	namedWindow("拼接效果", WINDOW_NORMAL);
+	imshow("拼接效果", dst);
+	//imwrite(MediaPath + "SIFT/dst.jpg", dst);
 
 	//OptimizeSeam(right, imageWrap, dst);
 	//imshow("opm_sift_result", dst);
+
+	time_t end = clock();
+	double interval = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "interval: " << interval << endl;
+
+	cout << "stitch end!\n";
 
 	waitKey(0);
 	return 0;
