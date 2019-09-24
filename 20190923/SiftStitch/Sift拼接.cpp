@@ -20,7 +20,11 @@ using namespace cv::ml;
 
 void CalcCorners(const Mat & H, const Mat & src);
 Mat stitchTwo(Mat & img1, Mat & img2);
+Mat doStitchTwo(Mat & img1, Mat & img2);
 vector<Mat> getFiles(cv::String dir);
+void timeCounter(time_t start);
+
+vector<cv::String> paths;
 
 typedef struct
 {
@@ -31,29 +35,87 @@ typedef struct
 }four_corners_t;
 
 four_corners_t corners;
+string dir = "images";
 
-int main()
+void stitch()
 {
 	cout << "stitch start!\n";
+	time_t begin = clock();
 
-	//Mat img1 = imread("images/00.png");
-	//Mat img2 = imread("images/01.png");
-	Mat img1 = imread("dst.png");
-	Mat img2 = imread("images/02.png");
+	vector<Mat> images = getFiles(dir);
 
-	Mat dst = stitchTwo(img1, img2);
+	//Mat img0 = images[0];
+	//Mat img1 = images[1];
+	Mat img0 = imread("res_0_3.png");
+	Mat img1 = imread("images/04.png");
+
+	//cout << "stitching \"" << paths[1] << "\" ";
+	Mat dst = stitchTwo(img0, img1);
+
+#if 0
+	int count = images.size();
+	for (int i = 2; i < 6; i++)
+	{
+		cout << "stitching \"" << paths[i] << "\" ";
+		dst = stitchTwo(dst, images[i]);
+	}
+#endif
 
 	namedWindow("拼接效果", WINDOW_NORMAL);
 	imshow("拼接效果", dst);
-	//imwrite("dst.png", dst);
 
-	cout << "stitch end!\n";
+	time_t end = clock();
+	double interval = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "stitching end, total interval: " << interval << endl;
+
+	//string name = "res_0_" +paths.size()+ ".png";
+	//imwrite("res.png", dst);
 
 	waitKey(0);
+}
+
+int main()
+{
+	stitch();
+
 	return 0;
 }
 
 Mat stitchTwo(Mat & img1, Mat & img2)
+{
+	Mat img1roi = img1(Rect(500, 1200, img2.cols, img2.rows));
+	namedWindow("img1roi", WINDOW_NORMAL);
+	imshow("img1roi", img1roi);
+
+	//cout << "stitching \"" << paths[1] << "\" ";
+	Mat temp = doStitchTwo(img1roi, img2);
+
+	//namedWindow("拼接效果", WINDOW_NORMAL);
+	//imshow("拼接效果", temp);
+
+	int dst_height = img1.rows + 200;
+	int dst_width = img1.cols + 200;
+	Mat dst(dst_height, dst_width, CV_8UC3);
+	dst.setTo(0);
+
+	int hx = temp.rows - img2.rows;
+	int wx = temp.cols - img2.cols;
+	temp.copyTo(dst(Rect(700 - wx, 1200, temp.cols, temp.rows)));
+
+	Mat img1_;
+	copyMakeBorder(img1, img1_, 0, 200, 200, 0, 0, Scalar(0, 0, 0));
+	for (int i = 1; i < dst_height; ++i) {
+		for (int j = 1; j < dst_width; ++j) {
+			if (dst.at<Vec3b>(i, j)[0] == 0 && img1_.at<Vec3b>(i, j)[0] != 0) {
+				dst.at<Vec3b>(i, j) = img1_.at<Vec3b>(i, j);
+			}
+		}
+	}
+
+	return dst;
+}
+
+Mat doStitchTwo(Mat & img1, Mat & img2)
 {
 	time_t begin = clock();
 
@@ -75,12 +137,13 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	int addleft = 500;
 	//int addright = 0;
 	//cout << "addw: " << addw << "addh: " << addh << endl;
-	copyMakeBorder(img2, imageMatch, 0, addbottom + addh, addleft, addw, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
 	int h = imageMatch.rows * 0.2;
 	copyMakeBorder(img1, imageSrc, 0, addbottom + h, addleft, 0, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	sift = SIFT::create(800);
+
 
 	BFMatcher matcher; //实例化一个暴力匹配器
 	Mat key_left, key_right;
@@ -89,8 +152,14 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 							   //比如左图有个特征m，它和右图的特征点n最匹配，这个DMatch就记录它俩最匹配，并且还记录m和n的
 							   //特征向量的距离和其他信息，这个距离在后面用来做筛选
 
+	timeCounter(begin);
+
 	sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+
+	drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
+
+	timeCounter(begin);
 
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
@@ -146,6 +215,10 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	Mat dst(dst_height, dst_width, CV_8UC3);
 	dst.setTo(0);
 
+	//time_t mid = clock();
+	//double interval1 = double(mid - begin) / CLOCKS_PER_SEC;
+	//cout << "interval1: " << interval1 << " ";
+
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
@@ -157,11 +230,20 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 		}
 	}
 
-	time_t end = clock();
-	double interval = double(end - begin) / CLOCKS_PER_SEC;
-	cout << "interval: " << interval << endl;
+	timeCounter(begin);
+	//time_t end = clock();
+	//double interval = double(end - begin) / CLOCKS_PER_SEC;
+	//cout << "interval: " << interval << endl;
 
 	return dst;
+}
+
+void timeCounter(time_t start)
+{
+	time_t end = clock();
+	double interval = double(end - start) / CLOCKS_PER_SEC;
+	int i = 1;
+	cout << "interval: " << interval << "; ";
 }
 
 void CalcCorners(const Mat& H, const Mat& src)
@@ -211,19 +293,12 @@ void CalcCorners(const Mat& H, const Mat& src)
 
 vector<Mat> getFiles(cv::String dir)
 {
-	vector<cv::String> paths;
 	glob(dir, paths, false);
 
 	vector<Mat> images;
-	//size_t count = fn.size(); //number of png files in images folder
-	//for (size_t i = 0; i < count; i++)
-	Mat img;
 	for ( auto path : paths )
 	{
-		img = imread(path);
-		images.push_back(img);
-		//imshow("img", imread(fn[i]));
-		//waitKey(1000);
+		images.push_back(imread(path));
 	}
 	return images;
 }
