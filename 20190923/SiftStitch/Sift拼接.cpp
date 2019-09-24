@@ -47,13 +47,13 @@ void stitch()
 	//Mat img0 = images[0];
 	//Mat img1 = images[1];
 
-	Mat img0 = imread("res_0_1.png");
+	Mat img0 = imread("res_0_2.png");
 	//Mat img0 = imread("images/00.png");
-	Mat img1 = imread("images/02.png");
+	Mat img1 = imread("images/03.png");
 
 	//cout << "stitching \"" << paths[1] << "\" ";
-	//Mat dst = stitchTwo(img0, img1);
-	Mat dst = doStitchTwo(img0, img1);
+	Mat dst = stitchTwo(img0, img1);
+	//Mat dst = doStitchTwo(img0, img1);
 
 #if 0
 	int count = images.size();
@@ -87,7 +87,7 @@ int main()
 Mat findROI(Mat src, int w, int h)
 {
 	//Mat res = src(Rect(0, 0.25 * h , w, h)); // 00+01
-	Mat res = src(Rect(0, 500, w, h)); // 00+01
+	Mat res = src(Rect(100, 800, w, h)); // 00+01
 	//Mat res = src(Rect(500, 1200, w, h)); // res_0_3+04
 	namedWindow("roi", WINDOW_NORMAL);
 	imshow("roi", res);
@@ -103,14 +103,14 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	Mat temp = doStitchTwo(img1roi, img2);
 
 	Mat dst;
-	int addwidth = 400;
-	int addheight = 0.3 * (height+100);
+	int addwidth = 300;
+	int addheight = 0.2 * height;
 	copyMakeBorder(img1, dst, 0, addheight, addwidth, 0, 0, Scalar(0, 0, 0));
 
 	int hx = temp.rows - height;
 	int wx = temp.cols - width;
 	//temp.copyTo(dst(Rect(700 - wx, 1200, temp.cols, temp.rows)));
-	temp.copyTo(dst(Rect(0, 500, temp.cols, temp.rows)));
+	temp.copyTo(dst(Rect(100, 800, temp.cols, temp.rows)));
 
 	return dst;
 }
@@ -133,14 +133,15 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	// make border
 	//int addtop = 0;
-	int addbottom = 100;
-	int addleft = 500;
+	int addbottom = 0;
+	int addleft = 300;
 	//int addright = 0;
 	//cout << "addw: " << addw << "addh: " << addh << endl;
 	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
-	copyMakeBorder(img2, imageMatch, 0, addbottom + addh, addleft + addw, 0, 0, Scalar(0, 0, 0));
-	int h = imageMatch.rows * 0.25;
-	copyMakeBorder(img1, imageSrc, 0, addbottom+h, addleft, 0, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img2, imageMatch, 0, addh, addleft+addw, 0, 0, Scalar(0, 0, 0));
+	//copyMakeBorder(img2, imageMatch, 0, addbottom, addleft, 0, 0, Scalar(0, 0, 0));
+	int h = imageMatch.rows * 0.2;
+	copyMakeBorder(img1, imageSrc, 0, h, addleft, 0, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	sift = SIFT::create(800);
