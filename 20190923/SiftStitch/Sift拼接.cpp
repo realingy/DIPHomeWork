@@ -23,6 +23,7 @@ Mat stitchTwo(Mat & img1, Mat & img2);
 Mat doStitchTwo(Mat & img1, Mat & img2);
 vector<Mat> getFiles(cv::String dir);
 void timeCounter(time_t start);
+Rect roi(100, 800, 10, 10);
 
 vector<cv::String> paths;
 
@@ -44,20 +45,27 @@ void stitch()
 
 	vector<Mat> images = getFiles(dir);
 
-	//Mat img0 = images[0];
-	//Mat img1 = images[1];
+#if 1
+	Mat img0 = images[0];
+	Mat img1 = images[1];
+	cout << "stitching \"" << paths[1] << "\" ";
+	Mat dst = doStitchTwo(img0, img1);
 
-	Mat img0 = imread("res_0_2.png");
-	//Mat img0 = imread("images/00.png");
-	Mat img1 = imread("images/03.png");
+	//Mat ttt = imread("res.png");
+	Mat img2 = images[2];
+	cout << "stitching \"" << paths[2] << "\" ";
+	dst = doStitchTwo(dst, img2);
 
-	//cout << "stitching \"" << paths[1] << "\" ";
-	Mat dst = stitchTwo(img0, img1);
-	//Mat dst = doStitchTwo(img0, img1);
+#else
+	Mat img0 = imread("res_0_1.png");
+	Mat img1 = imread("images/02.png");
+
+	Mat dst = doStitchTwo(img0, img1);
+#endif
 
 #if 0
 	int count = images.size();
-	for (int i = 2; i < 6; i++)
+	for (int i = 2; i < 4; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		dst = stitchTwo(dst, images[i]);
@@ -66,13 +74,14 @@ void stitch()
 
 	namedWindow("拼接效果", WINDOW_NORMAL);
 	imshow("拼接效果", dst);
+	imwrite("res.png", dst);
 
 	time_t end = clock();
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
 	cout << "stitching end, total interval: " << interval << endl;
 
 	//string name = "res_0_" +paths.size()+ ".png";
-	imwrite("res.png", dst);
+	//imwrite("res.png", dst);
 
 	waitKey(0);
 }
@@ -84,13 +93,12 @@ int main()
 	return 0;
 }
 
-Mat findROI(Mat src, int w, int h)
+Mat findROI(Mat src)
 {
-	//Mat res = src(Rect(0, 0.25 * h , w, h)); // 00+01
-	Mat res = src(Rect(100, 800, w, h)); // 00+01
-	//Mat res = src(Rect(500, 1200, w, h)); // res_0_3+04
-	namedWindow("roi", WINDOW_NORMAL);
-	imshow("roi", res);
+	Mat res = src(roi); // 00+01
+	//Mat res = src(Rect(100, 800, 2048, 2048)); // 00+01
+	//namedWindow("roi", WINDOW_NORMAL);
+	//imshow("roi", res);
 	return res;
 }
 
@@ -98,7 +106,9 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 {
 	int width = img2.cols;
 	int height = img2.rows;
-	Mat img1roi = findROI(img1, width, height);
+	roi.width = width;
+	roi.height = height;
+	Mat img1roi = findROI(img1);
 
 	Mat temp = doStitchTwo(img1roi, img2);
 
@@ -110,7 +120,13 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	int hx = temp.rows - height;
 	int wx = temp.cols - width;
 	//temp.copyTo(dst(Rect(700 - wx, 1200, temp.cols, temp.rows)));
-	temp.copyTo(dst(Rect(100, 800, temp.cols, temp.rows)));
+	temp.copyTo(dst(Rect(roi.x, roi.y, temp.cols, temp.rows)));
+
+	//update ROI
+	roi.x = roi.x + addwidth + corners.left_bottom.x * 2;
+	roi.y = roi.y + (corners.right_bottom.y - corners.left_top.y - height);
+
+	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 1, 1, 0);
 
 	return dst;
 }
@@ -130,18 +146,17 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	int addh = height1 - height2;
 	int addw = width1 - width2;
+	//cout << "addw: " << addw << "addh: " << addh << endl;
 
 	// make border
-	//int addtop = 0;
+	int addtop = 0;
 	int addbottom = 0;
-	int addleft = 300;
-	//int addright = 0;
-	//cout << "addw: " << addw << "addh: " << addh << endl;
+	int addleft = 400;
+	int addright = 0;
 	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
-	copyMakeBorder(img2, imageMatch, 0, addh, addleft+addw, 0, 0, Scalar(0, 0, 0));
-	//copyMakeBorder(img2, imageMatch, 0, addbottom, addleft, 0, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img2, imageMatch, addtop, addbottom + addh, addleft+addw, addright, 0, Scalar(0, 0, 0));
 	int h = imageMatch.rows * 0.2;
-	copyMakeBorder(img1, imageSrc, 0, h, addleft, 0, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	sift = SIFT::create(800);
@@ -153,14 +168,14 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 							   //比如左图有个特征m，它和右图的特征点n最匹配，这个DMatch就记录它俩最匹配，并且还记录m和n的
 							   //特征向量的距离和其他信息，这个距离在后面用来做筛选
 
-	timeCounter(begin);
+	//timeCounter(begin);
 
 	sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 
 	//drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
 
-	timeCounter(begin);
+	//timeCounter(begin);
 
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
@@ -192,7 +207,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
 	//也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
 	//Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
-	// cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
+	cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
 
 	//计算配准图的四个顶点坐标
 	CalcCorners(homo, imageMatch);
@@ -200,6 +215,19 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	//cout << "left_bottom:" << corners.left_bottom << endl;
 	//cout << "right_top:" << corners.right_top << endl;
 	//cout << "right_bottom:" << corners.right_bottom << endl;
+#if 0
+	int startx = min(corners.left_top.x, corners.left_bottom.x);
+	int starty = min(corners.left_top.y, corners.right_top.y);
+	int endx = max(corners.right_top.x, corners.right_bottom.x);
+	int endy = min(corners.left_bottom.y, corners.right_bottom.y);
+	roi.x = startx;
+	roi.y = starty;
+	roi.width = endx - startx;
+	roi.height = endy - starty;
+
+	namedWindow("imageMatch", WINDOW_NORMAL);
+	imshow("imageMatch", imageMatch);
+#endif
 
 	//图像配准
 	Mat imageWrap; // , imageTransform2;
@@ -208,6 +236,10 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	//warpPerspective(imageSrc, imageTransform2, adjustMat*homo, Size(b.cols*1.3, b.rows*1.8));
 	//namedWindow("旋转效果", WINDOW_NORMAL);
 	//imshow("旋转效果", imageWrap);
+
+//	rectangle(imageWrap, cvPoint(startx, starty), cvPoint(endx, endy), Scalar(0, 0, 255), 2, 2, 0);
+//	namedWindow("imageWrap", WINDOW_NORMAL);
+//	imshow("imageWrap", imageWrap);
 
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;
@@ -231,13 +263,13 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		}
 	}
 
-	timeCounter(begin);
-	//time_t end = clock();
-	//double interval = double(end - begin) / CLOCKS_PER_SEC;
-	//cout << "interval: " << interval << endl;
+	//timeCounter(begin);
+	time_t end = clock();
+	double interval = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "interval: " << interval << endl;
 
-	namedWindow("临时拼接效果", WINDOW_NORMAL);
-	imshow("临时拼接效果", dst);
+	//namedWindow("临时拼接效果", WINDOW_NORMAL);
+	//imshow("临时拼接效果", dst);
 
 	return dst;
 }
@@ -247,7 +279,7 @@ void timeCounter(time_t start)
 	time_t end = clock();
 	double interval = double(end - start) / CLOCKS_PER_SEC;
 	int i = 1;
-	cout << "interval: " << interval << "; ";
+	cout << "interval: " << interval << ";";
 }
 
 void CalcCorners(const Mat& H, const Mat& src)
