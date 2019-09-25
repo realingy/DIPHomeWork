@@ -19,20 +19,19 @@ using namespace cv::xfeatures2d;
 using namespace cv::ml;
 
 void CalcCorners(const Mat & H, const Mat & src);
-//void CalcCorners2(const Mat & H, const Mat & src);
-void CalcCorners2(const Mat& H, const Rect & roi);
+void CalcROICorners(const Mat& H, const Rect & roi);
 Mat stitchTwo(Mat & img1, Mat & img2);
 Mat doStitchTwo(Mat & img1, Mat & img2);
 vector<Mat> getFiles(cv::String dir);
 void timeCounter(time_t start);
-void updateROI(int i);
+inline void updateROI();
 
-//Rect roi(100, 800, 10, 10);
-Rect roi(50, 400, 10, 10);
+Rect roi(0, 0, 0, 0);
 int g_width;
 int g_height;
 
-#define BORDERWIDTH 420
+#define BORDERWIDTH 500
+#define BORDERHEIGHT 0
 
 vector<cv::String> paths;
 
@@ -61,17 +60,18 @@ void stitch()
 	g_width = img1.cols;
 	cout << "stitching \"" << paths[1] << "\" ";
 	Mat dst = doStitchTwo(img0, img1);
-	updateROI(1);
 
 	Mat img2 = images[2];
 	cout << "stitching \"" << paths[2] << "\" ";
 	dst = doStitchTwo(dst, img2);
-	updateROI(2);
+	updateROI();
 
 	int count = images.size();
-	for (int i = 3; i < 5; i++)
+	for (int i = 3; i < 6; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
+		//dst = doStitchTwo(dst, images[i]);
+		//updateROI();
 		dst = stitchTwo(dst, images[i]);
 	}
 
@@ -115,14 +115,7 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	temp.copyTo(dst(Rect(roi.x, roi.y, temp.cols, temp.rows)));
 
 	//update ROI
-	int startx = min(cornersroi.left_top.x, cornersroi.left_bottom.x);
-	int starty = min(cornersroi.left_top.y, cornersroi.right_top.y);
-	int endx = max(cornersroi.right_top.x, cornersroi.right_bottom.x);
-	int endy = max(cornersroi.left_bottom.y, cornersroi.right_bottom.y);
-	roi.x += startx;
-	roi.y += starty;
-	roi.width = endx - startx;
-	roi.height = endy - starty;
+	updateROI();
 
 	return dst;
 }
@@ -146,7 +139,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	// make border
 	int addtop = 0;
-	int addbottom = 0;
+	int addbottom = BORDERHEIGHT;
 	int addleft = BORDERWIDTH; //小于420出现拼接模糊
 	int addright = 0;
 	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
@@ -155,7 +148,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
-	sift = SIFT::create(800);
+	sift = SIFT::create(1000);
 
 	BFMatcher matcher; //实例化一个暴力匹配器
 	Mat key_left, key_right;
@@ -209,27 +202,13 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	CalcCorners(homo, imageMatch);
 
 	Rect roi = Rect(imageMatch.cols - g_width, 0, g_width, g_height);
-	CalcCorners2(homo, roi);
-	//Mat imgroi = imageMatch(Rect(imageMatch.cols - g_width, 0, g_width, g_height));
-	//namedWindow("roi", WINDOW_NORMAL);
-	//imshow("roi", imgroi);
-	//cout << "###left_top:" << cornersroi.left_top << endl;
-	//cout << "###left_bottom:" << cornersroi.left_bottom << endl;
-	//cout << "###right_top:" << cornersroi.right_top << endl;
-	//cout << "###right_bottom:" << cornersroi.right_bottom << endl;
+	CalcROICorners(homo, roi);
 
 	//图像配准
 	Mat imageWrap; // , imageTransform2;
 	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows+h)); //透视变换
-
 	//rectangle(imageWrap, cvPoint(cornersroi.left_bottom.x, cornersroi.left_top.y), cvPoint(cornersroi.right_top.x , cornersroi.right_bottom.y), Scalar(0, 0, 255), 1, 1, 0);
 
-	//namedWindow("旋转效果", WINDOW_NORMAL);
-	//imshow("旋转效果", imageWrap);
-	//imwrite("wrap.png", imageWrap);
-
-//	namedWindow("imageWrap", WINDOW_NORMAL);
-//	imshow("imageWrap", imageWrap);
 
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;
@@ -238,18 +217,20 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	Mat dst(dst_height, dst_width, CV_8UC3);
 	dst.setTo(0);
 
-	//time_t mid = clock();
-	//double interval1 = double(mid - begin) / CLOCKS_PER_SEC;
-	//cout << "interval1: " << interval1 << " ";
-
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
+			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
+				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
+			else
+				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
+			/*
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
+			*/
 		}
 	}
 
@@ -258,42 +239,19 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
 	cout << "interval: " << interval << endl;
 
-	//namedWindow("临时拼接效果", WINDOW_NORMAL);
-	//imshow("临时拼接效果", dst);
-
 	return dst;
 }
 
-void updateROI(int i)
+inline void updateROI()
 {
-	/*
-	cout << "left_top:" << corners.left_top << endl;
-	cout << "left_bottom:" << corners.left_bottom << endl;
-	cout << "right_top:" << corners.right_top << endl;
-	cout << "right_bottom:" << corners.right_bottom << endl;
-
-	int startx = min(corners.left_top.x, corners.left_bottom.x) + BORDERWIDTH * 2;
-	int starty = min(corners.left_top.y, corners.right_top.y);
-	int endx = max(corners.right_top.x, corners.right_bottom.x);
-	int endy = max(corners.left_bottom.y, corners.right_bottom.y) - 0.2 * g_height;
-	cout << "endy: " << endy << '\t';
-	roi.x = startx;
-	roi.y = starty;
-	roi.width = endx - startx;
-	roi.height = endy - starty;
-	cout << "startx: " << startx << "starty: " << starty << "width: " << roi.width << "height: " << roi.height << endl;
-	*/
-
-	//int startx = min(cornersroi.left_top.x, cornersroi.left_bottom.x) + BORDERWIDTH * i;
 	int startx = min(cornersroi.left_top.x, cornersroi.left_bottom.x);
 	int starty = min(cornersroi.left_top.y, cornersroi.right_top.y);
 	int endx = max(cornersroi.right_top.x, cornersroi.right_bottom.x);
 	int endy = max(cornersroi.left_bottom.y, cornersroi.right_bottom.y);
-	roi.x = startx;
-	roi.y = starty;
+	roi.x += startx;
+	roi.y += starty;
 	roi.width = endx - startx;
 	roi.height = endy - starty;
-	cout << "startx: " << startx << "starty: " << starty << "width: " << roi.width << "height: " << roi.height << endl;
 }
 
 void timeCounter(time_t start)
@@ -313,8 +271,6 @@ void CalcCorners(const Mat& H, const Mat& src)
 	V1 = H * V2;
 
 	//左上角(0,0,1)
-	//cout << "V2: " << V2 << endl;
-	//cout << "V1: " << V1 << endl;
 	corners.left_top.x = v1[0] / v1[2];
 	corners.left_top.y = v1[1] / v1[2];
 
@@ -349,7 +305,7 @@ void CalcCorners(const Mat& H, const Mat& src)
 	corners.right_bottom.y = v1[1] / v1[2];
 }
 
-void CalcCorners2(const Mat& H, const Rect & roi)
+void CalcROICorners(const Mat& H, const Rect & roi)
 {
 	//左上角(roi.x, roi.y, 1)
 	double v2[] = { roi.x, roi.y, 1 };//左上角
@@ -383,7 +339,7 @@ void CalcCorners2(const Mat& H, const Rect & roi)
 	cornersroi.left_bottom.x = v1[0] / v1[2];
 	cornersroi.left_bottom.y = v1[1] / v1[2];
 
-	//左下角(roi.x, roi.y + roi.height, 1)
+	//右:下角(roi.x, roi.y + roi.height, 1)
 	v2[0] = roi.x + roi.width;
 	v2[1] = roi.y + roi.height;
 	v2[2] = 1;
@@ -394,53 +350,6 @@ void CalcCorners2(const Mat& H, const Rect & roi)
 	cornersroi.right_bottom.x = v1[0] / v1[2];
 	cornersroi.right_bottom.y = v1[1] / v1[2];
 }
-
-/*
-void CalcCorners2(const Mat& H, const Mat& src)
-{
-	//左上角(0,0,1)
-	double v2[] = { 0, 0, 1 };//左上角
-	double v1[3];//变换后的坐标值
-	Mat V2 = Mat(3, 1, CV_64FC1, v2);  //列向量
-	Mat V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
-	V1 = H * V2;
-
-	cout << "V2: " << V2 << endl;
-	cout << "V1: " << V1 << endl;
-	cornersroi.left_top.x = v1[0] / v1[2];
-	cornersroi.left_top.y = v1[1] / v1[2];
-
-	//左下角(0,src.rows,1)
-	v2[0] = 0;
-	v2[1] = src.rows;
-	v2[2] = 1;
-	V2 = Mat(3, 1, CV_64FC1, v2);  //列向量
-	V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
-	V1 = H * V2;
-	cornersroi.left_bottom.x = v1[0] / v1[2];
-	cornersroi.left_bottom.y = v1[1] / v1[2];
-
-	//右上角(src.cols,0,1)
-	v2[0] = src.cols;
-	v2[1] = 0;
-	v2[2] = 1;
-	V2 = Mat(3, 1, CV_64FC1, v2);  //列向量
-	V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
-	V1 = H * V2;
-	cornersroi.right_top.x = v1[0] / v1[2];
-	cornersroi.right_top.y = v1[1] / v1[2];
-
-	//右下角(src.cols,src.rows,1)
-	v2[0] = src.cols;
-	v2[1] = src.rows;
-	v2[2] = 1;
-	V2 = Mat(3, 1, CV_64FC1, v2);  //列向量
-	V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
-	V1 = H * V2;
-	cornersroi.right_bottom.x = v1[0] / v1[2];
-	cornersroi.right_bottom.y = v1[1] / v1[2];
-}
-*/
 
 vector<Mat> getFiles(cv::String dir)
 {
