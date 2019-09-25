@@ -113,7 +113,7 @@ Mat stitchTwo(Mat & img1, Mat & img2)
 	Mat temp = doStitchTwo(img1roi, img2);
 
 	Mat dst;
-	int addwidth = 300;
+	int addwidth = 420;
 	int addheight = 0.2 * height;
 	copyMakeBorder(img1, dst, 0, addheight, addwidth, 0, 0, Scalar(0, 0, 0));
 
@@ -151,7 +151,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	// make border
 	int addtop = 0;
 	int addbottom = 0;
-	int addleft = 400;
+	int addleft = 420; //小于500出现拼接模糊
 	int addright = 0;
 	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
 	copyMakeBorder(img2, imageMatch, addtop, addbottom + addh, addleft+addw, addright, 0, Scalar(0, 0, 0));
@@ -207,7 +207,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
 	//也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
 	//Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
-	cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
+	// cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
 
 	//计算配准图的四个顶点坐标
 	CalcCorners(homo, imageMatch);
