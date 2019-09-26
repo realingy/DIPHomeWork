@@ -10,16 +10,19 @@ from matplotlib import pyplot as plt
 import os
 import time
 
+roi = []
+
 class Stitch():
 
     names=[]
     paths=[]
-    points=[]
+    images=[]
     imageWidth=0
     imageHeight=0
 
     def __init__(self):
         dir = "images/"
+
         self.names = os.listdir(dir)
         # print(names)
         self.names.sort()
@@ -27,18 +30,54 @@ class Stitch():
         for name in self.names:
             self.paths.append("images/" + name)
 
-        img = cv.imread(self.paths[0])
-        sp = img.shape
-        self.imageHeight = sp[0]
-        self.imageWidth = sp[1]
+        for path in self.paths:
+            img = cv.imread(path)
+            self.images.append(img)
+
+        h, w = self.images[0].shape[:2]
+        self.imageHeight = h
+        self.imageWidth = w
+        print("h: ", self.imageHeight, ",w: ", self.imageWidth)
+
+    def updateROI(self):
+        print("11111")
 
     def work(self):
+        print("==============================Start stitching===============================")
+        a = time.time()
+
+        img0 = self.images[0]
+        img1 = self.images[1]
+
+        print("stitching \"", self.names[1])
+        dst = self.stitchtwo(img0, img1)
+
+        img2 = self.images[2]
+        print("stitching \"", self.names[2])
+        dst = self.stitchtwo(dst, img2)
+        self.updateROI()
+
         length = len(self.names)
+
+        for i in range(3, length):
+            print("stitching ", self.names[i])
+            dst = self.stitch(dst, self.images[i])
+            # self.updateROI()
+
+        # // rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
+
+        cv.namedWindow("拼接效果", cv.WINDOW_NORMAL)
+        cv.imshow("拼接效果", dst)
+        # cv.imwrite("res.png", dst)
+
+        print("==============================End stitching===============================")
+        print("Totla interval: ", time.time()-a)
+
         # res1 = self.stitch(0, 2, 400, 300)
         # cv.imwrite('res.png', res1)
         # res1 = self.stitch(0, length//2, 400, 300)
-        res1 = self.stitch(0, 8, 400, 300)
-        cv.imwrite('res1.png', res1)
+        # res1 = self.stitch(0, 8, 400, 300)
+        # cv.imwrite('res1.png', res1)
         # res2 = self.stitch(length//2, length, 400, 300)
         # cv.imwrite('res2.png', res2)
         # res = self.stitchtwo(res1, res2, 3300, 5500)
@@ -48,36 +87,36 @@ class Stitch():
         # res2 = cv.imread('2.jpg')
         # res = self.stitchtwo(res1, res2, 100, 500)
 
-    def stitch(self, start, end, addheight, addwidth):
-        img0 = cv.imread(self.paths[start])
-        img1 = cv.imread(self.paths[start+1])
 
-        print("==============================Start stitching===============================")
-        print("stitching ", self.names[start+1])
-        a = time.time()
-        res = self.stitchtwo(img0, img1, addheight, addwidth)
+    def stitch(self, img1, img2):
+        img1roi = img1(self.roi)
 
-        for i in range(start+2, end):
-            print("stitching ", self.names[i])
-            img = cv.imread(self.paths[i])
-            res = self.stitchtwo(res, img, addheight, addwidth)
+        temp = self.stitchtwo(img1roi, img2)
 
-        print("==============================End stitching===============================")
-        print("Totla interval: ", time.time()-a)
-        return res
+        rows, cols = temp.shape[:2]
+        addwidth = cols - self.roi.width
+        addheight = rows - self.roi.height
+        dst = cv.copyMakeBorder(img1, 0, addheight, addwidth, 0, cv.BORDER_CONSTANT, value=(0, 0, 0))
 
-    def stitchtwo(self, img1, img2, addheight, addwidth):
+        # copyto
+        # temp.copyTo(dst(Rect(roi.x, roi.y, temp.cols, temp.rows)))
+
+        self.updateROI()
+
+        return dst
+
+    def stitchtwo(self, img1, img2):
         a = time.time()
         # size matches
         rows1, cols1 = img1.shape[:2]
         rows2, cols2 = img2.shape[:2]
         h = rows1 - rows2
         w = cols1 - cols2
-        if(h > 0 or w > 0):
-            top, bot, left, right = 0, h, 0, w
-            img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
-        top, bot, left, right = 0, addheight, addwidth, 0
-        srcImg = cv.copyMakeBorder(img1, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        # if(h > 0 or w > 0):
+        #     top, bot, left, right = 0, h, w, 0
+        #     img2 = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        top, bot, left, right = 0, 400, 300, 0
+        srcImg = cv.copyMakeBorder(img1, top, bot+h, left+w, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
@@ -126,21 +165,16 @@ class Stitch():
             dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
             M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
 
-            # sp = testImg.shape
-            # self.points.clear()
-            # self.points.append(sp[1] - self.imageWidth)
-            # self.points.append(0)
-            # self.points.append(self.imageWidth)
-            # self.points.append(self.imageHeight)
-            # roi = testImg[self.points[1]:self.points[3], self.points[0]:self.points[0]+self.points[2]]
-            # cv.imwrite("roi.png", roi)
-            # calROICorners
+            pots = []
+            height, width = testImg.shape[:2]
+            pots.append(width - self.imageWidth)
+            pots.append(0)
+            pots.append(self.imageWidth)
+            pots.append(self.imageHeight)
+            self.calROICorners(np.array(M), pots)
 
             warpImg = cv.warpPerspective(testImg, np.array(M), (testImg.shape[1], testImg.shape[0]),
                                          flags=cv.WARP_INVERSE_MAP)
-
-
-
 
             # for col in range(0, cols):
             #     if srcImg[:, col].any() and warpImg[:, col].any():
@@ -166,7 +200,7 @@ class Stitch():
                         # srcImgLen = float(abs(col - left))
                         # testImgLen = float(abs(col - right))
                         # alpha = srcImgLen / (srcImgLen + testImgLen)
-                        # res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
+                        res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
                         res[row, col] = warpImg[row, col]
                     """
 
@@ -187,6 +221,47 @@ class Stitch():
         else:
             print("Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT))
             matchesMask = None
+
+    def calROICorners(self, H, pots):
+
+        # 左上角
+        v2 = {pots[0], pots[1], 1} # 左上角
+        # v1 = [3] # 变换后的坐标值
+
+        V2 = np.array(v2).reshape(3, 1)
+        # V1 = np.array(v1) # 列向量
+        v1 = H * V2
+
+        left_top_x = v1[0] / v1[2]
+        left_top_y = v1[1] / v1[2]
+
+        # 右上角
+        v2 = {pots[0] + pots[2], pots[1], 1}
+        V2 = Mat(3, 1, CV_64FC1, v2)  # 列向量
+        V1 = Mat(3, 1, CV_64FC1, v1)  # 列向量
+        V1 = H * V2
+
+        right_top_x = v1[0] / v1[2]
+        right_top_y = v1[1] / v1[2]
+
+        # 左下角
+        v2 = { pots[0], pots[1] + pots[3], 1}
+        V2 = Mat(3, 1, CV_64FC1, v2)  # 列向量
+        V1 = Mat(3, 1, CV_64FC1, v1)  # 列向量
+        V1 = H * V2
+
+        left_bottom_x = v1[0] / v1[2]
+        left_bottom_y = v1[1] / v1[2]
+
+        # 右下角
+        v2 = {pots[0] + pots[2], pots[1] + pots[3], 1}
+        V2 = Mat(3, 1, CV_64FC1, v2)  # 列向量
+        V1 = Mat(3, 1, CV_64FC1, v1)  # 列向量
+        V1 = H * V2
+
+        right_bottom_x = v1[0] / v1[2]
+        right_bottom_y = v1[1] / v1[2]
+
 
     def AutoReduceBorder(self, img):
         rows, cols = img.shape[:2]
@@ -221,7 +296,7 @@ class Stitch():
 
 if __name__ == '__main__':
     S = Stitch()
-    S.work()
+    # S.work()
     # img0 = cv.imread('res_0_9.png')
     # img1 = cv.imread('res_10_20.png')
     # S.StitchTwo(img0, img1)
