@@ -31,7 +31,7 @@ int g_width;
 int g_height;
 
 #define BORDERWIDTH 500
-#define BORDERHEIGHT 0
+#define BORDERHEIGHT 50
 
 vector<cv::String> paths;
 
@@ -66,14 +66,16 @@ void stitch()
 	dst = doStitchTwo(dst, img2);
 	updateROI();
 
+#if 1
 	int count = images.size();
-	for (int i = 3; i < 6; i++)
+	for (int i = 3; i < count; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		//dst = doStitchTwo(dst, images[i]);
 		//updateROI();
 		dst = stitchTwo(dst, images[i]);
 	}
+#endif
 
 	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
 
@@ -93,12 +95,6 @@ int main()
 	stitch();
 
 	return 0;
-}
-
-Mat findROI(Mat src)
-{
-	Mat res = src(roi);
-	return res;
 }
 
 Mat stitchTwo(Mat & img1, Mat & img2)
@@ -148,7 +144,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
-	sift = SIFT::create(1000);
+	sift = SIFT::create(5000);
 
 	BFMatcher matcher; //实例化一个暴力匹配器
 	Mat key_left, key_right;
@@ -164,22 +160,19 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	//drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
 
-	//timeCounter(begin);
-
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
 	//sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
 	vector<DMatch> good_matches;
-	int ptsPairs = std::min(100, (int)(matches.size() * 0.15));
-	// cout << ptsPairs << endl;
+	int ptsPairs = std::min(2000, (int)(matches.size()));
 	for (int i = 0; i < ptsPairs; i++)
 	{
-		good_matches.push_back(matches[i]);//距离最小的100个压入新的DMatch
+		good_matches.push_back(matches[i]); //距离最小的500个压入新的DMatch
 	}
 
 	//Mat outimg; //drawMatches这个函数直接画出摆在一起的图
-	//drawMatches(imageMatch, key1, imageSrc, key1, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
+	//drawMatches(imageMatch, key1, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
 	//namedWindow("特征匹配效果", WINDOW_NORMAL);
 	//imshow("特征匹配效果", outimg);
 
@@ -219,18 +212,18 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
+			/*
 			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			/*
+			*/
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
-			*/
 		}
 	}
 
