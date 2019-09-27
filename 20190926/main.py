@@ -125,8 +125,8 @@ class Stitch():
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
-        sift = cv.xfeatures2d_SIFT().create(5000)
-        # sift = cv.xfeatures2d_SIFT().create(7000)
+        # sift = cv.xfeatures2d_SIFT().create(5000)
+        sift = cv.xfeatures2d_SIFT().create(10000)
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1gray, None)
         kp2, des2 = sift.detectAndCompute(img2gray, None)
@@ -176,18 +176,6 @@ class Stitch():
 
             for row in range(0, rows):
                 for col in range(0, cols):
-                    """
-                    if not srcImg[row, col].any():
-                        res[row, col] = warpImg[row, col]
-                    elif not warpImg[row, col].any():
-                        res[row, col] = srcImg[row, col]
-                    else:
-                        # srcImgLen = float(abs(col - left))
-                        # testImgLen = float(abs(col - right))
-                        # alpha = srcImgLen / (srcImgLen + testImgLen)
-                        res[row, col] = np.clip(srcImg[row, col] * (1 - alpha) + warpImg[row, col] * alpha, 0, 255)
-                        res[row, col] = warpImg[row, col]
-                    """
 
                     if warpImg[row, col, 0]:
                         res[row, col] = warpImg[row, col]
