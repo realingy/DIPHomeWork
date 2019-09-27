@@ -25,6 +25,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2);
 vector<Mat> getFiles(cv::String dir);
 void timeCounter(time_t start);
 inline void updateROI();
+Mat Optimize(Mat& img);
 
 Rect roi(0, 0, 0, 0);
 int g_width;
@@ -71,11 +72,11 @@ void stitch()
 	for (int i = 3; i < count; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
-		//dst = doStitchTwo(dst, images[i]);
-		//updateROI();
 		dst = stitchTwo(dst, images[i]);
 	}
 #endif
+
+	dst = Optimize(dst); // 裁剪
 
 	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
 
@@ -144,7 +145,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
-	sift = SIFT::create(5000);
+	sift = SIFT::create(7000);
 
 	BFMatcher matcher; //实例化一个暴力匹配器
 	Mat key_left, key_right;
@@ -212,18 +213,18 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
-			/*
 			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			*/
+			/*
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
+			*/
 		}
 	}
 
@@ -354,5 +355,50 @@ vector<Mat> getFiles(cv::String dir)
 		images.push_back(imread(path));
 	}
 	return images;
+}
+
+Mat Optimize(Mat& img)
+{
+	//time_t begin = clock();
+	int rows = img.rows;
+	int cols = img.cols;
+	//cout << "h: " << rows << "w: " << cols << endl;
+	Mat gray;
+	cvtColor(img, gray, COLOR_BGR2GRAY);
+
+	int left = 0;
+	int bottom = 0;
+
+	// 下边界
+	for (int i = rows-1; i >= 0; i--)
+	{
+		for (int j = cols - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(i, j) != 0)
+			{
+				bottom = i;
+				goto findLeft;
+			}
+		}
+	}
+
+findLeft:
+	// 左边界
+	for (int i = 0; i < cols; i++)
+	{
+		for (int j = rows - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(j, i) != 0)
+			{
+				left = i;
+				goto end;
+			}
+		}
+	}
+
+end:
+	//cout << "left: " << left << ", bottom: " << bottom << endl;
+	//timeCounter(begin);
+	return img(Rect(left, 0, cols-left, bottom));
 }
 
