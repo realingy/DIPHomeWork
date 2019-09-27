@@ -7,7 +7,6 @@
 import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
-from goto import with_goto
 import os
 import time
 
@@ -49,8 +48,6 @@ class Stitch():
     names=[]
     paths=[]
     images=[]
-    imageWidth=0
-    imageHeight=0
 
     def __init__(self):
         dir = "images/"
@@ -66,14 +63,6 @@ class Stitch():
             img = cv.imread(path)
             self.images.append(img)
 
-        h, w = self.images[0].shape[:2]
-        self.imageHeight = h
-        self.imageWidth = w
-        # print("h: ", self.imageHeight, ",w: ", self.imageWidth)
-
-        # roi.x = 100
-        # roi.y = 400
-
     def work(self):
         print("==============================Start stitching===============================")
         a = time.time()
@@ -81,16 +70,12 @@ class Stitch():
         img0 = self.images[0]
         img1 = self.images[1]
 
-        print("stitching \"", self.names[1], "\"")
+        print("stitching ", self.names[1], "")
         dst = self.stitchtwo(img0, img1)
-
-        # img2 = self.images[2]
-        # print("stitching \"", self.names[2], "\"")
-        # dst = self.stitchtwo(dst, img2)
         self.updateROI()
 
         length = len(self.names)
-        for i in range(2, 15):
+        for i in range(2, length):
             print("stitching ", self.names[i])
             dst = self.stitch(dst, self.images[i])
 
@@ -140,10 +125,8 @@ class Stitch():
         testImg = cv.copyMakeBorder(img2, top, bot, left, right, cv.BORDER_CONSTANT, value=(0, 0, 0))
         img1gray = cv.cvtColor(srcImg, cv.COLOR_BGR2GRAY)
         img2gray = cv.cvtColor(testImg, cv.COLOR_BGR2GRAY)
-        # img1grayROI = img1gray[0:rows1, w: ]
-        # img2grayROI = img2gray[0:rows2, w: ]
-        # sift = cv.xfeatures2d_SIFT().create(5000)
-        sift = cv.xfeatures2d_SIFT().create(7000)
+        sift = cv.xfeatures2d_SIFT().create(5000)
+        # sift = cv.xfeatures2d_SIFT().create(7000)
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1gray, None)
         kp2, des2 = sift.detectAndCompute(img2gray, None)
@@ -182,56 +165,12 @@ class Stitch():
         if len(good) > MIN_MATCH_COUNT:
             src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
             dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-            # M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
-            M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 1.0)
-
-            # imgroi = Rect()
-            # height, width = testImg.shape[:2]
-            # imgroi.x = width - self.imageWidth
-            # imgroi.y = 0
-            # imgroi.width = self.imageWidth
-            # imgroi.height = self.imageHeight
-            # self.calROICorners(np.array(M), imgroi)
+            M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
 
             warpImg = cv.warpPerspective(testImg, np.array(M), (testImg.shape[1], testImg.shape[0]),
                                          flags=cv.WARP_INVERSE_MAP)
 
             self.calROICorners(warpImg)
-
-            # gray = cv.cvtColor(warpImg, cv.COLOR_BGR2GRAY)
-            # h, w = gray.shape[:2]
-            # print("xxxxxxxxxxxxxxx ", h, w)
-            #
-            # find = False
-            # for row in range(0, rows):
-            #     for col in range(0, cols):
-            #         if gray[row, col]:
-            #             print("yyyyyyyyyyyyyyy ", row, col)
-            #             find = True
-            #             break
-            #     if find == True:
-            #         break
-            #
-            # find = False
-            # for col in range(0, cols):
-            #     for row in range(0, rows):
-            #         if gray[row, col]:
-            #             print("zzzzzzzzzzzzzzz ", row, col)
-            #             find = True
-            #             break
-            #     if find == True:
-            #         break
-            #
-            # cv.imwrite("warp.png", warpImg)
-
-            # for col in range(0, cols):
-            #     if srcImg[:, col].any() and warpImg[:, col].any():
-            #         left = col
-            #         break
-            # for col in range(cols - 1, 0, -1):
-            #     if srcImg[:, col].any() and warpImg[:, col].any():
-            #         right = col
-            #         break
 
             res = np.zeros([rows, cols, 3], np.uint8)
 
@@ -317,42 +256,7 @@ class Stitch():
             if find == True:
                 break
 
-    """
-    def calROICorners(self, H, imgroi):
-        :param H:
-        :param imgroi:
-        :return:
-
-        # print(imgroi)
-        # print(H)
-        # 左上角
-        v2 = np.matrix([imgroi.x, imgroi.y, 1]).T
-        v1 = H * v2
-        corner.left_top_x = v1[0] / v1[2]
-        corner.left_top_y = v1[1] / v1[2]
-
-        # 右上角
-        v2 = np.matrix([imgroi.x + imgroi.width, imgroi.y, 1]).T
-        v1 = H * v2
-        corner.right_top_x = v1[0] / v1[2]
-        corner.right_top_y = v1[1] / v1[2]
-
-        # 左下角
-        v2 = np.matrix([imgroi.x, imgroi.y + imgroi.height, 1]).T
-        v1 = H * v2
-        corner.left_bottom_x = v1[0] / v1[2]
-        corner.left_bottom_y = v1[1] / v1[2]
-
-        # 右下角
-        v2 = np.matrix([imgroi.x + imgroi.width, imgroi.y + imgroi.height, 1]).T
-        v1 = H * v2
-        corner.right_bottom_x = v1[0] / v1[2]
-        corner.right_bottom_y = v1[1] / v1[2]
-        print("corner", corner)
-    """
-
     def updateROI(self):
-        # rows, cols = img.shape[:2]
         startx = min(corner.left_top_x, corner.left_bottom_x)
         starty = min(corner.left_top_y, corner.right_top_y)
         endx = max(corner.right_top_x, corner.right_bottom_x)
@@ -361,20 +265,11 @@ class Stitch():
         roi.height = int(endy - starty)
         roi.x += startx
         roi.y += starty
-        # print(roi)
-
-        # gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        # for col in range(0, cols):
-        #     for row in range(0, rows):
 
 
 
 if __name__ == '__main__':
     S = Stitch()
     S.work()
-    # img0 = cv.imread('res_0_9.png')
-    # img1 = cv.imread('res_10_20.png')
-    # S.StitchTwo(img0, img1)
-
 
 
