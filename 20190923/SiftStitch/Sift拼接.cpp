@@ -66,20 +66,21 @@ void stitch()
 	g_width = img1.cols;
 	cout << "stitching \"" << paths[1] << "\" ";
 	Mat dst = doStitchTwo(img0, img1);
+	updateROI();
 
 	/*
 	Mat img2 = images[2];
 	cout << "stitching \"" << paths[2] << "\" ";
 	dst = doStitchTwo(dst, img2);
 	updateROI();
+	*/
 
 	int count = images.size();
-	for (int i = 3; i < 8; i++)
+	for (int i = 2; i < 3; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		dst = stitchTwo(dst, images[i]);
 	}
-	*/
 
 	dst = Optimize(dst); // 裁剪
 
@@ -178,10 +179,11 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	timeCounter("zz", begin);
 
-	//drawKeypoints(imageSrcROI, key2, imageSrcROI);//画出特征点
-	//imwrite("imageSrc.png", imageSrcROI);
-	//drawKeypoints(imageMatchROI, key1, imageMatchROI);//画出特征点
-	//imwrite("imageMatch.png", imageMatchROI);
+	//Mat keySrc, keyMatch;
+	//drawKeypoints(graySrc, key2, keySrc);//画出特征点
+	//imwrite("keySrc.png", keySrc);
+	//drawKeypoints(grayMatch, key1, keyMatch);//画出特征点
+	//imwrite("keyMatch.png", keyMatch);
 
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
