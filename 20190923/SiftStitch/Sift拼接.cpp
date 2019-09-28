@@ -10,7 +10,6 @@
 #include "opencv2/imgproc.hpp"   
 #include "opencv2/xfeatures2d.hpp"  
 #include "opencv2/ml.hpp" 
-#include <opencv2/core.hpp>
 #include <ctime>
 
 using namespace cv;
@@ -23,7 +22,7 @@ void CalcROICorners(const Mat& H, const Rect & roi);
 Mat stitchTwo(Mat & img1, Mat & img2);
 Mat doStitchTwo(Mat & img1, Mat & img2);
 vector<Mat> getFiles(cv::String dir);
-void timeCounter(time_t start);
+void timeCounter(string str, time_t start);
 inline void updateROI();
 Mat Optimize(Mat& img);
 
@@ -31,8 +30,15 @@ Rect roi(0, 0, 0, 0);
 int g_width;
 int g_height;
 
+#if 1
+string dir = "images";
 #define BORDERWIDTH 500
 #define BORDERHEIGHT 50
+#else
+string dir = "images_2";
+#define BORDERWIDTH 800
+#define BORDERHEIGHT 300
+#endif
 
 vector<cv::String> paths;
 
@@ -46,7 +52,6 @@ typedef struct
 
 four_corners_t corners;
 four_corners_t cornersroi;
-string dir = "images";
 
 void stitch()
 {
@@ -62,19 +67,19 @@ void stitch()
 	cout << "stitching \"" << paths[1] << "\" ";
 	Mat dst = doStitchTwo(img0, img1);
 
+	/*
 	Mat img2 = images[2];
 	cout << "stitching \"" << paths[2] << "\" ";
 	dst = doStitchTwo(dst, img2);
 	updateROI();
 
-#if 1
 	int count = images.size();
-	for (int i = 3; i < count; i++)
+	for (int i = 3; i < 8; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		dst = stitchTwo(dst, images[i]);
 	}
-#endif
+	*/
 
 	dst = Optimize(dst); // 裁剪
 
@@ -121,6 +126,12 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 {
 	time_t begin = clock();
 
+	/*
+	Mat bb;
+	int a1 = threshold(img, bb, 0, 255, THRESH_BINARY | THRESH_OTSU);
+	threshold(img, bb, a1, 255, THRESH_BINARY_INV);
+	*/
+
 	Mat imageSrc;
 	Mat imageMatch;
 
@@ -144,22 +155,86 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	int h = imageMatch.rows * 0.2;
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
-	Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
-	sift = SIFT::create(7000);
+	// Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
+	Ptr<SIFT> sift = SIFT::create(8000);
 
-	BFMatcher matcher; //实例化一个暴力匹配器
+	//Ptr<ORB> sift = ORB::create(8000);
+	//sift->setFastThreshold(0);
+
+	//BFMatcher matcher; //实例化一个暴力匹配器
+	FlannBasedMatcher matcher; //实例化Flann匹配器
 	Mat key_left, key_right;
 	vector<KeyPoint> key1, key2;
 	vector<DMatch> matches;    //DMatch是用来描述匹配好的一对特征点的类，包含这两个点之间的相关信息
 							   //比如左图有个特征m，它和右图的特征点n最匹配，这个DMatch就记录它俩最匹配，并且还记录m和n的
 							   //特征向量的距离和其他信息，这个距离在后面用来做筛选
 
-	//timeCounter(begin);
+	int rows = imageMatch.rows;
+	int cols = imageMatch.cols;
 
-	sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+	Mat graySrc, grayMatch;
+	cvtColor(imageSrc, graySrc, COLOR_BGR2GRAY);
+	cvtColor(imageMatch, grayMatch, COLOR_BGR2GRAY);
 
-	//drawKeypoints(imageSrc, key1, imageSrc);//画出特征点
+
+#if 0
+	Mat imageMatchROI = imageMatch(Rect(cols/2 - width2/2, rows/2, width2 / 2, height2 / 2));
+
+	//cout << "h: " << rows << "w: " << cols << endl;
+	Mat gray;
+	cvtColor(imageSrc, gray, COLOR_BGR2GRAY);
+
+	int left = 0;
+	int bottom = 0;
+
+	// 下边界
+	for (int i = rows - 1; i >= 0; i--)
+	{
+		for (int j = cols - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(i, j) != 0)
+			{
+				bottom = i;
+				goto findLeft;
+			}
+		}
+	}
+
+findLeft:
+	// 左边界
+	for (int i = 0; i < cols; i++)
+	{
+		for (int j = rows - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(j, i) != 0)
+			{
+				left = i;
+				goto end;
+			}
+		}
+	}
+
+end:
+	Mat imageSrcROI = imageSrc(Rect(left+cols/2-width2/2, bottom+rows/2-height2, width2 / 2, height2 / 2));
+	sift->detectAndCompute(imageMatchROI, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	sift->detectAndCompute(imageSrcROI, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+
+#else
+
+	timeCounter("xx", begin);
+	//sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	timeCounter("yy", begin);
+	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+	timeCounter("zz", begin);
+
+#endif
+
+	//drawKeypoints(imageSrcROI, key2, imageSrcROI);//画出特征点
+	//imwrite("imageSrc.png", imageSrcROI);
+	//drawKeypoints(imageMatchROI, key1, imageMatchROI);//画出特征点
+	//imwrite("imageMatch.png", imageMatchROI);
 
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
@@ -228,7 +303,6 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		}
 	}
 
-	//timeCounter(begin);
 	time_t end = clock();
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
 	cout << "interval: " << interval << endl;
@@ -248,12 +322,12 @@ inline void updateROI()
 	roi.height = endy - starty;
 }
 
-void timeCounter(time_t start)
+void timeCounter(string massege,time_t start)
 {
 	time_t end = clock();
 	double interval = double(end - start) / CLOCKS_PER_SEC;
 	int i = 1;
-	cout << "interval: " << interval << ";";
+	cout << massege << ", interval: " << interval << "\n";
 }
 
 void CalcCorners(const Mat& H, const Mat& src)
@@ -302,7 +376,7 @@ void CalcCorners(const Mat& H, const Mat& src)
 void CalcROICorners(const Mat& H, const Rect & roi)
 {
 	//左上角(roi.x, roi.y, 1)
-	double v2[] = { roi.x, roi.y, 1 };//左上角
+	double v2[] = { double(roi.x), double(roi.y), 1 };//左上角
 	double v1[3];//变换后的坐标值
 	Mat V2 = Mat(3, 1, CV_64FC1, v2);  //列向量
 	Mat V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
@@ -362,9 +436,11 @@ Mat Optimize(Mat& img)
 	//time_t begin = clock();
 	int rows = img.rows;
 	int cols = img.cols;
-	//cout << "h: " << rows << "w: " << cols << endl;
-	Mat gray;
-	cvtColor(img, gray, COLOR_BGR2GRAY);
+	Mat gray = img;
+	if (3 == img.channels())
+	{
+		cvtColor(img, gray, COLOR_BGR2GRAY);
+	}
 
 	int left = 0;
 	int bottom = 0;
@@ -401,4 +477,5 @@ end:
 	//timeCounter(begin);
 	return img(Rect(left, 0, cols-left, bottom));
 }
+
 

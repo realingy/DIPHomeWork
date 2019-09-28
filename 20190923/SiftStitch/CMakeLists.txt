@@ -6,7 +6,7 @@ set(CMAKE_CONFIGRATION_TYPES "Release" CACHE STRING "" FORCE)
 
 # opencv库查询
 set(OpenCV_DIR $ENV{OPENCV_DIR})
-message(${OpenCV_DIR})
+# message(${OpenCV_DIR})
 find_package(OpenCV REQUIRED)
 
 # 包含目录
