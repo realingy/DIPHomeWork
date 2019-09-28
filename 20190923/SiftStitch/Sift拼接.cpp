@@ -76,7 +76,8 @@ void stitch()
 	*/
 
 	int count = images.size();
-	for (int i = 2; i < 3; i++)
+#pragma omp parallel for
+	for (int i = 2; i < count; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		dst = stitchTwo(dst, images[i]);
@@ -86,15 +87,11 @@ void stitch()
 
 	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
 	
-	timeCounter("median start", begin);
 	//中值滤波
 	Mat res;
 	medianBlur(dst, res, 3);
-	timeCounter("median end", begin);
 
 	namedWindow("拼接效果", WINDOW_NORMAL);
-	//imshow("拼接效果", dst);
-	//imwrite("res.png", dst);
 	imshow("拼接效果", res);
 	imwrite("res.png", res);
 
@@ -159,7 +156,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
 	// Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
-	Ptr<SIFT> sift = SIFT::create(8000);
+	Ptr<SIFT> sift = SIFT::create(15000);
 
 	//Ptr<ORB> sift = ORB::create(8000);
 	//sift->setFastThreshold(0);
@@ -179,13 +176,13 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	cvtColor(imageSrc, graySrc, COLOR_BGR2GRAY);
 	cvtColor(imageMatch, grayMatch, COLOR_BGR2GRAY);
 
-	timeCounter("xx", begin);
+	//timeCounter("xx", begin);
 	//sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	timeCounter("yy", begin);
+	//timeCounter("yy", begin);
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
-	timeCounter("zz", begin);
+	//timeCounter("zz", begin);
 
 	//Mat keySrc, keyMatch;
 	//drawKeypoints(graySrc, key2, keySrc);//画出特征点
@@ -220,9 +217,9 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	//获取图像1到图像2的投影映射矩阵 尺寸为3*3  
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
-	//也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
-	//Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
-	// cout << "变换矩阵为：\n" << homo << endl << endl; //输出映射矩阵   
+	// 也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
+	// Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
+	// cout << "变换矩阵为：\n" << endl << homo << endl << endl; //输出映射矩阵   
 
 	//计算配准图的四个顶点坐标
 	CalcCorners(homo, imageMatch);
@@ -245,18 +242,18 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
-			/*
 			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			*/
+			/*
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
+			*/
 		}
 	}
 
