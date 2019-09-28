@@ -126,12 +126,6 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 {
 	time_t begin = clock();
 
-	/*
-	Mat bb;
-	int a1 = threshold(img, bb, 0, 255, THRESH_BINARY | THRESH_OTSU);
-	threshold(img, bb, a1, 255, THRESH_BINARY_INV);
-	*/
-
 	Mat imageSrc;
 	Mat imageMatch;
 
@@ -176,51 +170,6 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	cvtColor(imageSrc, graySrc, COLOR_BGR2GRAY);
 	cvtColor(imageMatch, grayMatch, COLOR_BGR2GRAY);
 
-
-#if 0
-	Mat imageMatchROI = imageMatch(Rect(cols/2 - width2/2, rows/2, width2 / 2, height2 / 2));
-
-	//cout << "h: " << rows << "w: " << cols << endl;
-	Mat gray;
-	cvtColor(imageSrc, gray, COLOR_BGR2GRAY);
-
-	int left = 0;
-	int bottom = 0;
-
-	// 下边界
-	for (int i = rows - 1; i >= 0; i--)
-	{
-		for (int j = cols - 1; j >= 0; j--)
-		{
-			if (gray.at<uchar>(i, j) != 0)
-			{
-				bottom = i;
-				goto findLeft;
-			}
-		}
-	}
-
-findLeft:
-	// 左边界
-	for (int i = 0; i < cols; i++)
-	{
-		for (int j = rows - 1; j >= 0; j--)
-		{
-			if (gray.at<uchar>(j, i) != 0)
-			{
-				left = i;
-				goto end;
-			}
-		}
-	}
-
-end:
-	Mat imageSrcROI = imageSrc(Rect(left+cols/2-width2/2, bottom+rows/2-height2, width2 / 2, height2 / 2));
-	sift->detectAndCompute(imageMatchROI, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	sift->detectAndCompute(imageSrcROI, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
-
-#else
-
 	timeCounter("xx", begin);
 	//sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
@@ -228,8 +177,6 @@ end:
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	timeCounter("zz", begin);
-
-#endif
 
 	//drawKeypoints(imageSrcROI, key2, imageSrcROI);//画出特征点
 	//imwrite("imageSrc.png", imageSrcROI);
