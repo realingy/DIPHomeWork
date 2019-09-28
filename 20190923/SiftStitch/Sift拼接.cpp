@@ -85,10 +85,18 @@ void stitch()
 	dst = Optimize(dst); // 裁剪
 
 	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
+	
+	timeCounter("median start", begin);
+	//中值滤波
+	Mat res;
+	medianBlur(dst, res, 3);
+	timeCounter("median end", begin);
 
 	namedWindow("拼接效果", WINDOW_NORMAL);
-	imshow("拼接效果", dst);
-	imwrite("res.png", dst);
+	//imshow("拼接效果", dst);
+	//imwrite("res.png", dst);
+	imshow("拼接效果", res);
+	imwrite("res.png", res);
 
 	time_t end = clock();
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
@@ -237,18 +245,18 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 1; i < dst_height; ++i) {
 		for (int j = 1; j < dst_width; ++j) {
+			/*
 			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			/*
+			*/
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
-			*/
 		}
 	}
 
