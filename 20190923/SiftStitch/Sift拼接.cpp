@@ -1,5 +1,8 @@
 ﻿#include <iostream>  
-#include <stdio.h>  
+#include <ctime>
+#include "stitcher.h"
+
+/*
 #include "opencv2/core.hpp"  
 #include "opencv2/core/utility.hpp"  
 #include "opencv2/core/ocl.hpp"  
@@ -10,13 +13,14 @@
 #include "opencv2/imgproc.hpp"   
 #include "opencv2/xfeatures2d.hpp"  
 #include "opencv2/ml.hpp" 
-#include <ctime>
 
 using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
 using namespace cv::ml;
+*/
 
+/*
 void CalcCorners(const Mat & H, const Mat & src);
 void CalcROICorners(const Mat& H, const Rect & roi);
 Mat stitchTwo(Mat & img1, Mat & img2);
@@ -52,7 +56,9 @@ typedef struct
 
 four_corners_t corners;
 four_corners_t cornersroi;
+*/
 
+#if 0
 void stitch()
 {
 	cout << "stitch start!\n";
@@ -76,7 +82,6 @@ void stitch()
 	*/
 
 	int count = images.size();
-#pragma omp parallel for
 	for (int i = 2; i < count; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
@@ -101,14 +106,19 @@ void stitch()
 
 	waitKey(0);
 }
+#endif
+
+Stitcher *stitcher = new Stitcher();
+
 
 int main()
 {
-	stitch();
+	stitcher->stitch();
 
 	return 0;
 }
 
+#if 0
 Mat stitchTwo(Mat & img1, Mat & img2)
 {
 	Mat img1roi = img1(roi);
@@ -432,4 +442,5 @@ end:
 	return img(Rect(left, 0, cols-left, bottom));
 }
 
+#endif
 
