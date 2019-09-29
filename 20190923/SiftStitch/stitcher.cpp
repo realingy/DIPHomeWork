@@ -56,11 +56,8 @@ Stitcher::Stitcher(QObject *parent)
 	, height_(0)
 {
 	qRegisterMetaType<Mat>("Mat");
-//	qRegisterMetaType<vector<KeyPoint>>("vector<KeyPoint>");
 	obj_ = new Object();
-	// connect(obj_, SIGNAL(sig1()), SLOT(slot0()), Qt::QueuedConnection);
 	connect(this, SIGNAL(sig0(const Mat &)), obj_, SLOT(slotDetectAndCompute(const Mat & )), Qt::QueuedConnection);
-
 }
 
 void Stitcher::CalcCorners(const Mat & H, const Mat & src)
