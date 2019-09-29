@@ -3,6 +3,8 @@
 
 #define BORDERWIDTH 500
 #define BORDERHEIGHT 50
+
+void timeCounter(string massege, time_t start);
 	
 void Stitcher::stitch()
 {
@@ -56,17 +58,9 @@ Stitcher::Stitcher(QObject *parent)
 	qRegisterMetaType<Mat>("Mat");
 //	qRegisterMetaType<vector<KeyPoint>>("vector<KeyPoint>");
 	obj_ = new Object();
-	connect(obj_, SIGNAL(sig1()), SLOT(slot0()), Qt::QueuedConnection);
+	// connect(obj_, SIGNAL(sig1()), SLOT(slot0()), Qt::QueuedConnection);
 	connect(this, SIGNAL(sig0(const Mat &)), obj_, SLOT(slotDetectAndCompute(const Mat & )), Qt::QueuedConnection);
 
-}
-
-void Stitcher::slot0()
-{
-	cout << "response\n";
-	cout << "size: " << obj_->keys_.size();
-//	key2_ = keys;
-//	key_right_ = describor;
 }
 
 void Stitcher::CalcCorners(const Mat & H, const Mat & src)
@@ -230,7 +224,7 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	key2_.clear();
 	emit sig0(graySrc);
 	sift->detectAndCompute(grayMatch, Mat(), keysMatch, desMatch); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	//timeCounter("yy", begin);
+	timeCounter("yy", begin);
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	//sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	//timeCounter("zz", begin);
@@ -249,6 +243,8 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 
 	key2_ = obj_->keys_;
 	key_right_ = obj_->describor_;
+
+	timeCounter("zz", begin);
 
 	//return grayMatch;
 
@@ -399,5 +395,11 @@ end:
 	return img(Rect(left, 0, cols-left, bottom));
 }
 
-
+void timeCounter(string massege, time_t start)
+{
+	time_t end = clock();
+	double interval = double(end - start) / CLOCKS_PER_SEC;
+	int i = 1;
+	cout << massege << ", interval: " << interval << "\n";
+}
 

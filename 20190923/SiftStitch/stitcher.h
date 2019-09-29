@@ -44,9 +44,6 @@ public:
 signals:
 	void sig0(const Mat & graySrc);
 
-public slots:
-	void slot0();
-
 public:
 	void CalcCorners(const Mat & H, const Mat & src);
 	void CalcROICorners(const Mat& H, const Rect & roi);
