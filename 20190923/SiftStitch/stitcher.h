@@ -8,6 +8,9 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QDebug>
+#include <QMetaType>
+
+#include "object.h"
 
 #include "opencv2/core.hpp"  
 #include "opencv2/features2d.hpp"  
@@ -39,23 +42,19 @@ public:
     explicit Stitcher(QObject *parent = 0);
 
 signals:
-    //void iconLoaded(const QString fileName);
+	void sig0(const Mat & graySrc);
 
 public slots:
-	/*
-    void setFiles()
-    {
+	void slot0();
 
-    }
-	*/
-
+public:
 	void CalcCorners(const Mat & H, const Mat & src);
 	void CalcROICorners(const Mat& H, const Rect & roi);
 	Mat stitchTwo(Mat & img1, Mat & img2);
 	Mat doStitchTwo(Mat & img1, Mat & img2);
-	vector<Mat> & getFiles(cv::String dir);
+	void getFiles(cv::String dir);
 	void updateROI();
-	//Mat Optimize(Mat& img);
+	Mat Optimize(Mat& img);
 	void stitch();
 
 
@@ -67,6 +66,11 @@ private:
 	four_corners_t cornersroi_;
 	vector<Mat> images_;
 	vector<cv::String> paths_;
+
+	Object * obj_;
+
+	vector<KeyPoint> key2_;
+	Mat key_right_;
 
 };
 

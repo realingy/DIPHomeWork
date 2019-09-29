@@ -10,6 +10,8 @@
 #include <QDebug>
 
 #include "opencv2/core.hpp"  
+#include "opencv2/highgui.hpp"  
+#include "opencv2/imgproc.hpp"   
 #include "opencv2/features2d.hpp"  
 #include "opencv2/xfeatures2d.hpp"  
 #include <vector>
@@ -23,29 +25,24 @@ class Object : public QObject
     Q_OBJECT
 public:
     explicit Object(QObject *parent = 0);
+    ~Object();
+
+	Mat describor_;
+	vector<KeyPoint> keys_;
 
 signals:
-	void sigResult(const Mat & describor, const vector<KeyPoint> & keys);
+	//void sig1(const Mat & describor, const vector<KeyPoint> & keys);
+	void sig1();
 
 public slots:
-    void slotDetectAndCompute(const Mat & img)
-    {
-		//img_ = img;
-	
-		Mat describor;
-		vector<KeyPoint> keys;
-		Ptr<SIFT> sift = SIFT::create(15000);
-
-		sift->detectAndCompute(img, Mat(), keys, describor);
-
-		emit sigResult(describor, keys);
-    }
+	void slotDetectAndCompute(const Mat & img);
 
 protected:
     // void work();
 
 private:
 	Mat img_;
+	QThread *thread;
 
 };
 

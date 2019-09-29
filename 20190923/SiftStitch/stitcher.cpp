@@ -4,15 +4,69 @@
 #define BORDERWIDTH 500
 #define BORDERHEIGHT 50
 	
-//void CalcCorners(const Mat & H, const Mat & src);
-    
+void Stitcher::stitch()
+{
+	cout << "stitch start!\n";
+	time_t begin = clock();
+
+	string dir = "images";
+	getFiles(dir);
+
+	Mat img0 = images_[0];
+	Mat img1 = images_[1];
+	height_ = img1.rows;
+	width_ = img1.cols;
+	cout << "stitching \"" << paths_[1] << "\" ";
+	Mat dst = doStitchTwo(img0, img1);
+	updateROI();
+
+	/*
+	int count = images_.size();
+	for (int i = 2; i < 3; i++)
+	{
+		cout << "stitching \"" << paths_[i] << "\" ";
+		dst = stitchTwo(dst, images_[i]);
+	}
+	*/
+
+	//dst = Optimize(dst); // 裁剪
+
+	//中值滤波
+	medianBlur(dst, dst, 3);
+
+	// rectangle(dst, cvPoint(roi_.x, roi_.y), cvPoint(roi_.x+roi_.width, roi_.y+roi_.height), Scalar(0, 0, 255), 2, 2, 0);
+
+	namedWindow("拼接效果", WINDOW_NORMAL);
+	imshow("拼接效果", dst);
+	imwrite("res.png", dst);
+
+	time_t end = clock();
+	double interval = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "stitching end, total interval: " << interval << endl;
+
+	waitKey(0);
+}
+
 Stitcher::Stitcher(QObject *parent)
 	: QObject(parent)
 	, roi_(0, 0, 0, 0)
 	, width_(0)
 	, height_(0)
 {
+	qRegisterMetaType<Mat>("Mat");
+//	qRegisterMetaType<vector<KeyPoint>>("vector<KeyPoint>");
+	obj_ = new Object();
+	connect(obj_, SIGNAL(sig1()), SLOT(slot0()), Qt::QueuedConnection);
+	connect(this, SIGNAL(sig0(const Mat &)), obj_, SLOT(slotDetectAndCompute(const Mat & )), Qt::QueuedConnection);
 
+}
+
+void Stitcher::slot0()
+{
+	cout << "response\n";
+	cout << "size: " << obj_->keys_.size();
+//	key2_ = keys;
+//	key_right_ = describor;
 }
 
 void Stitcher::CalcCorners(const Mat & H, const Mat & src)
@@ -23,7 +77,6 @@ void Stitcher::CalcCorners(const Mat & H, const Mat & src)
 	Mat V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
 	V1 = H * V2;
 
-	/*
 	//左上角(0,0,1)
 	corners_.left_top.x = v1[0] / v1[2];
 	corners_.left_top.y = v1[1] / v1[2];
@@ -57,7 +110,6 @@ void Stitcher::CalcCorners(const Mat & H, const Mat & src)
 	V1 = H * V2;
 	corners_.right_bottom.x = v1[0] / v1[2];
 	corners_.right_bottom.y = v1[1] / v1[2];
-	*/
 }
 
 void Stitcher::CalcROICorners(const Mat& H, const Rect & roi)
@@ -69,7 +121,6 @@ void Stitcher::CalcROICorners(const Mat& H, const Rect & roi)
 	Mat V1 = Mat(3, 1, CV_64FC1, v1);  //列向量
 	V1 = H * V2;
 
-	/*
 	cornersroi_.left_top.x = v1[0] / v1[2];
 	cornersroi_.left_top.y = v1[1] / v1[2];
 
@@ -105,7 +156,6 @@ void Stitcher::CalcROICorners(const Mat& H, const Rect & roi)
 
 	cornersroi_.right_bottom.x = v1[0] / v1[2];
 	cornersroi_.right_bottom.y = v1[1] / v1[2];
-	*/
 }
 
 Mat Stitcher::stitchTwo(Mat & img1, Mat & img2)
@@ -162,7 +212,8 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 
 	//BFMatcher matcher; //实例化一个暴力匹配器
 	FlannBasedMatcher matcher; //实例化Flann匹配器
-	vector<KeyPoint> key1, key2;
+	vector<KeyPoint> keysMatch;
+	Mat desMatch;
 	vector<DMatch> matches;    //DMatch是用来描述匹配好的一对特征点的类，包含这两个点之间的相关信息
 							   //比如左图有个特征m，它和右图的特征点n最匹配，这个DMatch就记录它俩最匹配，并且还记录m和n的
 							   //特征向量的距离和其他信息，这个距离在后面用来做筛选
@@ -175,21 +226,35 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	cvtColor(imageMatch, grayMatch, COLOR_BGR2GRAY);
 
 	//timeCounter("xx", begin);
-	//sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	Mat key_left, key_right;
-	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	//sift->detectAndCompute(imageMatch, Mat(), keysMatch, desMatch); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	key2_.clear();
+	emit sig0(graySrc);
+	sift->detectAndCompute(grayMatch, Mat(), keysMatch, desMatch); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	//timeCounter("yy", begin);
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
-	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+	//sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	//timeCounter("zz", begin);
 
 	//Mat keySrc, keyMatch;
 	//drawKeypoints(graySrc, key2, keySrc);//画出特征点
 	//imwrite("keySrc.png", keySrc);
-	//drawKeypoints(grayMatch, key1, keyMatch);//画出特征点
+	//drawKeypoints(grayMatch, keysMatch, keyMatch);//画出特征点
 	//imwrite("keyMatch.png", keyMatch);
+	//while (key2_.size() == 0)
+	while (obj_->keys_.size() == 0)
+	{
+		cout << "waiting..." << "\n";
+		_sleep(1000);
+	}
 
-	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
+	key2_ = obj_->keys_;
+	key_right_ = obj_->describor_;
+
+	//return grayMatch;
+
+#if 1
+	//matcher.match(key_right, desMatch, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
+	matcher.match(key_right_, desMatch, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
 	//sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
@@ -201,7 +266,7 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	}
 
 	//Mat outimg; //drawMatches这个函数直接画出摆在一起的图
-	//drawMatches(imageMatch, key1, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
+	//drawMatches(imageMatch, keysMatch, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
 	//namedWindow("特征匹配效果", WINDOW_NORMAL);
 	//imshow("特征匹配效果", outimg);
 
@@ -210,8 +275,9 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 0; i < good_matches.size(); i++)
 	{
-		imagePoints1.push_back(key1[good_matches[i].trainIdx].pt);
-		imagePoints2.push_back(key2[good_matches[i].queryIdx].pt);
+		imagePoints1.push_back(keysMatch[good_matches[i].trainIdx].pt);
+		//imagePoints2.push_back(key2[good_matches[i].queryIdx].pt);
+		imagePoints2.push_back(key2_[good_matches[i].queryIdx].pt);
 	}
 
 	//获取图像1到图像2的投影映射矩阵 尺寸为3*3  
@@ -261,9 +327,10 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	cout << "interval: " << interval << endl;
 
 	return dst;
+#endif
 }
 
-vector<Mat> & Stitcher::getFiles(cv::String dir)
+void Stitcher::getFiles(cv::String dir)
 {
 	glob(dir, paths_, false);
 
@@ -271,8 +338,6 @@ vector<Mat> & Stitcher::getFiles(cv::String dir)
 	{
 		images_.push_back(imread(path));
 	}
-
-	return images_;
 }
 
 void Stitcher::updateROI()
@@ -287,60 +352,52 @@ void Stitcher::updateROI()
 	roi_.height = endy - starty;
 }
 
-/*
 Mat Stitcher::Optimize(Mat& img)
 {
-
-}
-*/
-
-void Stitcher::stitch()
-{
-	cout << "stitch start!\n";
-	time_t begin = clock();
-
-	string dir = "images";
-	vector<Mat> images = getFiles(dir);
-
-	Mat img0 = images[0];
-	Mat img1 = images[1];
-	//g_height = img1.rows;
-	//g_width = img1.cols;
-	//cout << "stitching \"" << paths[1] << "\" ";
-	Mat dst = doStitchTwo(img0, img1);
-	updateROI();
-
-	/*
-	Mat img2 = images[2];
-	cout << "stitching \"" << paths[2] << "\" ";
-	dst = doStitchTwo(dst, img2);
-	updateROI();
-
-	int count = images.size();
-	for (int i = 2; i < count; i++)
+//time_t begin = clock();
+	int rows = img.rows;
+	int cols = img.cols;
+	Mat gray = img;
+	if (3 == img.channels())
 	{
-		//cout << "stitching \"" << paths[i] << "\" ";
-		dst = stitcher->stitchTwo(dst, images[i]);
+		cvtColor(img, gray, COLOR_BGR2GRAY);
 	}
-	*/
 
-	//dst = Optimize(dst); // 裁剪
+	int left = 0;
+	int bottom = 0;
 
-	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
-	
-	//中值滤波
-	Mat res;
-	medianBlur(dst, res, 3);
+	// 下边界
+	for (int i = rows-1; i >= 0; i--)
+	{
+		for (int j = cols - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(i, j) != 0)
+			{
+				bottom = i;
+				goto findLeft;
+			}
+		}
+	}
 
-	namedWindow("拼接效果", WINDOW_NORMAL);
-	imshow("拼接效果", res);
-	imwrite("res.png", res);
+findLeft:
+	// 左边界
+	for (int i = 0; i < cols; i++)
+	{
+		for (int j = rows - 1; j >= 0; j--)
+		{
+			if (gray.at<uchar>(j, i) != 0)
+			{
+				left = i;
+				goto end;
+			}
+		}
+	}
 
-	time_t end = clock();
-	double interval = double(end - begin) / CLOCKS_PER_SEC;
-	cout << "stitching end, total interval: " << interval << endl;
-
-	waitKey(0);
+end:
+	//cout << "left: " << left << ", bottom: " << bottom << endl;
+	//timeCounter(begin);
+	return img(Rect(left, 0, cols-left, bottom));
 }
+
 
 
