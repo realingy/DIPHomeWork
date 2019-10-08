@@ -55,9 +55,10 @@ Stitcher::Stitcher(QObject *parent)
 	, width_(0)
 	, height_(0)
 {
-	qRegisterMetaType<Mat>("Mat");
 	obj_ = new Object();
+	qRegisterMetaType<Mat>("Mat");
 	connect(this, SIGNAL(sig0(const Mat &)), obj_, SLOT(slotDetectAndCompute(const Mat & )), Qt::QueuedConnection);
+	//connect(this, SIGNAL(sig0(int , int, const uchar *)), obj_, SLOT(slotDetectAndCompute(int , int, const uchar * )), Qt::QueuedConnection);
 }
 
 void Stitcher::CalcCorners(const Mat & H, const Mat & src)
@@ -216,10 +217,14 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	cvtColor(imageSrc, graySrc, COLOR_BGR2GRAY);
 	cvtColor(imageMatch, grayMatch, COLOR_BGR2GRAY);
 
-	//timeCounter("xx", begin);
+//	resize(graySrc, graySrc, Size(), 0.5, 0.5);
+//	resize(grayMatch, grayMatch, Size(), 0.5, 0.5);
+
 	//sift->detectAndCompute(imageMatch, Mat(), keysMatch, desMatch); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
+	timeCounter("xx", begin);
 	key2_.clear();
 	emit sig0(graySrc);
+	//obj_->slotDetectAndCompute(graySrc);
 	sift->detectAndCompute(grayMatch, Mat(), keysMatch, desMatch); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	timeCounter("yy", begin);
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
@@ -235,7 +240,7 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	while (obj_->keys_.size() == 0)
 	{
 		cout << "waiting..." << "\n";
-		_sleep(1000);
+		_sleep(100);
 	}
 
 	key2_ = obj_->keys_;
@@ -245,7 +250,6 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 
 	//return grayMatch;
 
-#if 1
 	//matcher.match(key_right, desMatch, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 	matcher.match(key_right_, desMatch, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
@@ -258,10 +262,10 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 		good_matches.push_back(matches[i]); //距离最小的500个压入新的DMatch
 	}
 
-	//Mat outimg; //drawMatches这个函数直接画出摆在一起的图
-	//drawMatches(imageMatch, keysMatch, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
-	//namedWindow("特征匹配效果", WINDOW_NORMAL);
-	//imshow("特征匹配效果", outimg);
+	Mat outimg; //drawMatches这个函数直接画出摆在一起的图
+	drawMatches(imageMatch, keysMatch, imageSrc, key2_, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
+	namedWindow("特征匹配效果", WINDOW_NORMAL);
+	imshow("特征匹配效果", outimg);
 
 	//计算图像配准点
 	vector<Point2f> imagePoints1, imagePoints2;
@@ -320,7 +324,7 @@ Mat Stitcher::doStitchTwo(Mat & img1, Mat & img2)
 	cout << "interval: " << interval << endl;
 
 	return dst;
-#endif
+
 }
 
 void Stitcher::getFiles(cv::String dir)
