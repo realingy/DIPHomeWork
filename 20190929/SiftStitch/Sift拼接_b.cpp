@@ -33,7 +33,7 @@ int g_height;
 #if 1
 string dir = "images";
 #define BORDERWIDTH 500
-#define BORDERHEIGHT 50
+#define BORDERHEIGHT 5000
 #else
 string dir = "images_2";
 #define BORDERWIDTH 800
@@ -64,7 +64,7 @@ void stitch()
 	Mat img1 = images[1];
 	g_height = img1.rows;
 	g_width = img1.cols;
-	cout << "w: " << g_width << "h: " << g_height << "\" ";
+	//cout << "w: " << g_width << "h: " << g_height << "\" ";
 	cout << "stitching \"" << paths[1] << "\" ";
 	Mat dst = doStitchTwo(img0, img1);
 	updateROI();
@@ -76,12 +76,14 @@ void stitch()
 	updateROI();
 	*/
 
+	/*
 	int count = images.size();
 	for (int i = 2; i < count; i++)
 	{
 		cout << "stitching \"" << paths[i] << "\" ";
 		dst = stitchTwo(dst, images[i]);
 	}
+	*/
 
 	//dst = Optimize(dst); // 裁剪
 
@@ -91,7 +93,7 @@ void stitch()
 	Mat res;
 	medianBlur(dst, res, 3);
 
-	cout << "w: " << dst.cols << "h: " << dst.rows << "\" ";
+	//cout << "w: " << dst.cols << "h: " << dst.rows << "\" ";
 	namedWindow("拼接效果", WINDOW_NORMAL);
 	imshow("拼接效果", res);
 	imwrite("res.png", res);
@@ -133,9 +135,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 {
 	time_t begin = clock();
 
-	Mat imageSrc;
-	Mat imageMatch;
-
+	/*
 	// size matches
 	int width1 = img1.cols;
 	int height1 = img1.rows;
@@ -145,16 +145,21 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	int addh = height1 - height2;
 	int addw = width1 - width2;
 	//cout << "addw: " << addw << "addh: " << addh << endl;
+	*/
+
+	Mat imageSrc;
+	Mat imageMatch;
 
 	// make border
 	int addtop = 0;
 	int addbottom = BORDERHEIGHT;
-	int addleft = BORDERWIDTH; //小于420出现拼接模糊
+	//int addleft = BORDERWIDTH; //小于420出现拼接模糊
+	int addleft = 500; //小于420出现拼接模糊
 	int addright = 0;
 	//copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
-	copyMakeBorder(img2, imageMatch, addtop, addbottom + addh, addleft+addw, addright, 0, Scalar(0, 0, 0));
-	int h = imageMatch.rows * 0.2;
-	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
+	copyMakeBorder(img2, imageMatch, addtop, addbottom, addleft, addright, 0, Scalar(0, 0, 0));
+//	int h = imageMatch.rows * 0.2;
+	copyMakeBorder(img1, imageSrc, addtop, addbottom, addleft, addright, 0, Scalar(0, 0, 0));
 
 	// Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	Ptr<SIFT> sift = SIFT::create(15000);
@@ -180,16 +185,23 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	//timeCounter("xx", begin);
 	//sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	//timeCounter("yy", begin);
+	timeCounter("yy", begin);
 	//sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
-	//timeCounter("zz", begin);
+	timeCounter("zz", begin);
+
 
 	//Mat keySrc, keyMatch;
 	//drawKeypoints(graySrc, key2, keySrc);//画出特征点
 	//imwrite("keySrc.png", keySrc);
 	//drawKeypoints(grayMatch, key1, keyMatch);//画出特征点
 	//imwrite("keyMatch.png", keyMatch);
+
+	//namedWindow("grayMatch", WINDOW_NORMAL);
+	//imshow("grayMatch", grayMatch);
+	//namedWindow("graySrc", WINDOW_NORMAL);
+	//imshow("graySrc", graySrc);
+
 
 	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
@@ -230,9 +242,8 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	//图像配准
 	Mat imageWrap; // , imageTransform2;
-	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows+h)); //透视变换
+	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows)); //透视变换
 	//rectangle(imageWrap, cvPoint(cornersroi.left_bottom.x, cornersroi.left_top.y), cvPoint(cornersroi.right_top.x , cornersroi.right_bottom.y), Scalar(0, 0, 255), 1, 1, 0);
-
 
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;
