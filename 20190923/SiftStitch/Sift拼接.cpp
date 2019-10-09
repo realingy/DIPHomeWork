@@ -85,11 +85,15 @@ void stitch()
 
 	dst = Optimize(dst); // 裁剪
 
-	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
-	
 	//中值滤波
 	Mat res;
-	medianBlur(dst, res, 3);
+	//medianBlur(dst, res, 3);
+
+	// 上采样
+	//pyrUp(res, res, Size(res.cols * 2, res.rows * 2));
+	pyrUp(dst, res, Size(dst.cols * 2, dst.rows * 2));
+
+	//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
 
 	namedWindow("拼接效果", WINDOW_NORMAL);
 	imshow("拼接效果", res);
@@ -105,6 +109,21 @@ void stitch()
 int main()
 {
 	stitch();
+#if 0
+	Mat img = imread("res.png");
+//	Mat res;
+//	medianBlur(img, res, 3);
+
+	// 锐化
+	Mat laplaci;
+	Laplacian(img, laplaci, CV_8UC3, 3, 1, 0);
+	// Laplacian(img, laplaci, CV_16S);
+
+	imwrite("res_0_0.png", laplaci);
+
+	Mat res = img - laplaci;
+	imwrite("res_0_0_1.png", res);
+#endif
 
 	return 0;
 }
@@ -232,7 +251,6 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows+h)); //透视变换
 	//rectangle(imageWrap, cvPoint(cornersroi.left_bottom.x, cornersroi.left_top.y), cvPoint(cornersroi.right_top.x , cornersroi.right_bottom.y), Scalar(0, 0, 255), 1, 1, 0);
 
-
 	//创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;
 	int dst_height = imageWrap.rows;
@@ -240,20 +258,20 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	Mat dst(dst_height, dst_width, CV_8UC3);
 	dst.setTo(0);
 
-	for (int i = 1; i < dst_height; ++i) {
-		for (int j = 1; j < dst_width; ++j) {
+	for (int i = 0; i < dst_height; ++i) {
+		for (int j = 0; j < dst_width; ++j) {
+			/*
 			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			/*
+			*/
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
-			*/
 		}
 	}
 
@@ -383,7 +401,7 @@ vector<Mat> getFiles(cv::String dir)
 		//images.push_back(imread(path));
 		Mat img = imread(path);
 		Mat dst;
-		resize(img, dst, Size(), 0.6, 0.6);
+		resize(img, dst, Size(), 0.5, 0.5);
 		images.push_back(dst);
 	}
 	return images;
