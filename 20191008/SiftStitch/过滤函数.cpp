@@ -9,41 +9,43 @@ bool refineMatchesWithHomography(const std::vector<cv::KeyPoint> & queryKeypoint
 	)    
 {
 	cv::Mat homography;
-    const int minNumberMatchesAllowed = 4;      
-    if (matches.size() < minNumberMatchesAllowed)      
+    const int minNumberMatchesAllowed = 4;
+    if (matches.size() < minNumberMatchesAllowed)
         return false;
 
-    // 为 cv::findHomography 准备数据    
-    std::vector<cv::Point2f> queryPoints(matches.size());      
-    std::vector<cv::Point2f> trainPoints(matches.size());      
+    // 为cv::findHomography准备数据
+    std::vector<cv::Point2f> queryPoints(matches.size());
+    std::vector<cv::Point2f> trainPoints(matches.size());
 
 	//std::vector<cv::Point2f> queryPoints, trainPoints;
 
-    for (size_t i = 0; i < matches.size(); i++)      
+    for (size_t i = 0; i < matches.size(); i++)
     {
-        queryPoints[i] = queryKeypoints[matches[i].queryIdx].pt;      
-        trainPoints[i] = trainKeypoints[matches[i].trainIdx].pt;      
+        queryPoints[i] = queryKeypoints[matches[i].queryIdx].pt;
+        trainPoints[i] = trainKeypoints[matches[i].trainIdx].pt;
     }
 
     // 查找单应矩阵并获取内点掩码    
-    std::vector<unsigned char> inliersMask(matches.size());      
-    homography = findHomography(queryPoints, trainPoints, CV_FM_RANSAC, reprojectionThreshold, inliersMask);      
+    std::vector<unsigned char> inliersMask(matches.size());
+    homography = findHomography(queryPoints, trainPoints, CV_FM_RANSAC, reprojectionThreshold, inliersMask);
 	Mat homo;
 	invert(homography, homo);
 	homographys.push_back(homo);
 	cout << "透视变换矩阵： " << "\n" << homo << endl;
 
-    std::vector<cv::DMatch> inliers;      
-    for (size_t i=0; i<inliersMask.size(); i++)      
+    std::vector<cv::DMatch> inliers;
+    for (size_t i=0; i<inliersMask.size(); i++)
     {
-        if (inliersMask[i])      
-            inliers.push_back(matches[i]);      
+		if (inliersMask[i])
+            inliers.push_back(matches[i]);
     }
-    matches.swap(inliers);    
+    matches.swap(inliers);
 
-    //Mat homoShow;    
-    //drawMatches(src,queryKeypoints,frameImg,trainKeypoints,matches,homoShow,Scalar::all(-1),CV_RGB(255,255,255),Mat(),2);         
-    //imshow("homoShow",homoShow);     
-    return matches.size() > minNumberMatchesAllowed;     
+    //Mat homoShow;
+    //drawMatches(src,queryKeypoints,frameImg,trainKeypoints,matches,homoShow,Scalar::all(-1),CV_RGB(255,255,255),Mat(),2);
+    //imshow("homoShow",homoShow);
+    return matches.size() > minNumberMatchesAllowed;
   
 }  
+
+
