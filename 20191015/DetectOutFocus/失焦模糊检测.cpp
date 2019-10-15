@@ -7,16 +7,24 @@ using namespace cv;
 using namespace std;
 
 bool focusDetect(Mat& img);
+vector<Mat> getFiles(cv::String dir);
+
+vector<String> paths;
 
 int main()
 {
 	//Mat img = imread("test.PNG");
 	//Mat img = imread("test2.png");
-	Mat img = imread("1.jpg");
-	if (false == focusDetect(img)) {
-		cout << "out of focus!\n";
-	} else {
-		cout << "in the focus!\n";
+	//Mat img = imread("1.jpg");
+	vector<Mat> files = getFiles("deblur/");
+	//for (auto img : files) {
+	for (int i = 0; i < files.size(); i++) {
+		Mat img = files[i];
+		if (false == focusDetect(img)) {
+			cout << paths[i] << ": out of focus!\n";
+		} else {
+			cout << paths[i] << ": in the focus!\n";
+		}
 	}
 
 	return 0;
@@ -36,18 +44,31 @@ bool focusDetect(Mat& img)
             if (abs(ptrow[j + 1] - ptrow[j])>diff_thre)
                 diff += abs(ptrow[j + 1] - ptrow[j]);
         }
-        cout << diff << endl;
+        //cout << diff << endl;
     }
     end = clock();
-    cout << "time=" << end - start << endl;
+    //cout << "time=" << end - start << endl;
 
     bool res = true;
     if (diff < diff_sum_thre) {
-        cout << "the focus might be wrong!" << endl;
+        //cout << "the focus might be wrong!" << endl;
         res = false;
     }
 
     return res;
+}
+
+vector<Mat> getFiles(cv::String dir)
+{
+	glob(dir, paths, false);
+
+	vector<Mat> images;
+	for (auto path : paths)
+	{
+		Mat img = imread(path);
+		images.push_back(img);
+	}
+	return images;
 }
 
 //返回一个与焦距是否对焦成功的一个比例因子

@@ -70,13 +70,13 @@ int main(int argc, char *argv[])
 	calcWnrFilter(h, Hw, 1.0 / double(snr));
 	//Hw calculation (stop)
 
-	// imwrite("HW.jpg", Hw);
-	// imwrite("h.jpg", h);
+	//imwrite("HW.jpg", Hw);
+	//imwrite("h.jpg", h);
 
 	imgIn.convertTo(imgIn, CV_32F);
 	edgetaper(imgIn, imgIn);
 
-	imwrite("in.png", imgIn);
+	//imwrite("in.png", imgIn);
 	imwrite("roi.jpg", imgIn(roi));
 
 	// filtering (start)
