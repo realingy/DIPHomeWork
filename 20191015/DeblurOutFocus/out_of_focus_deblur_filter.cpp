@@ -3,7 +3,9 @@
 * @author Karpushin Vladislav, karpushin@ngs.ru, https://github.com/VladKarpushin
 */
 #include "opencv2/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/highgui.hpp"
+//#include "opencv2/imgcodecs.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -18,14 +20,14 @@ void edgetaper(const Mat& inputImg, Mat& outputImg, double gamma = 5.0, double b
 
 const String keys =
 "{help h usage ? |                 | print this message   }"
-"{image          |4c6.png | input image name     }"
+"{image          |test.PNG         | input image name     }"
 "{R              |53               | radius               }"
 "{SNR            |5200             | signal to noise ratio}"
 ;
 
 int main(int argc, char *argv[])
 {
-	// help();
+	help();
 	CommandLineParser parser(argc, argv, keys);
 	if (parser.has("help"))
 	{
@@ -44,7 +46,8 @@ int main(int argc, char *argv[])
 	}
 
 	Mat imgIn;
-	imgIn = imread(strInFileName, IMREAD_GRAYSCALE);
+	//imgIn = imread(strInFileName, IMREAD_GRAYSCALE);
+	imgIn = imread(strInFileName, 0);
 	//normalize(imgIn, imgIn, 0, 255, NORM_MINMAX);
 	//imwrite("in.png", imgIn);
 	if (imgIn.empty()) //check whether the image is loaded or not
@@ -58,15 +61,23 @@ int main(int argc, char *argv[])
 	//! [main]
 	// it needs to process even image only
 	Rect roi = Rect(0, 0, imgIn.cols & -2, imgIn.rows & -2);
-
+	
+	// imwrite("roi.jpg", imgIn(roi));
+	
 	//Hw calculation (start)
 	Mat Hw, h;
 	calcPSF(h, roi.size(), R);
 	calcWnrFilter(h, Hw, 1.0 / double(snr));
 	//Hw calculation (stop)
 
+	// imwrite("HW.jpg", Hw);
+	// imwrite("h.jpg", h);
+
 	imgIn.convertTo(imgIn, CV_32F);
 	edgetaper(imgIn, imgIn);
+
+	imwrite("in.png", imgIn);
+	imwrite("roi.jpg", imgIn(roi));
 
 	// filtering (start)
 	filter2DFreq(imgIn(roi), imgOut, Hw);
@@ -84,9 +95,9 @@ int main(int argc, char *argv[])
 
 void help()
 {
-	cout << "2018-07-12" << endl;
+	cout << "2019-10-12" << endl;
 	cout << "DeBlur_v8" << endl;
-	cout << "You will learn how to recover an out-of-focus image by Wiener filter" << endl;
+	cout << "To recover an out-of-focus image by Wiener filter" << endl;
 }
 
 //! [calcPSF]
