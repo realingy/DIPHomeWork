@@ -43,5 +43,5 @@ Use `python scripts/test.py --help` for all options
 
 ```
 python scripts/deblur_image.py --weight_path=/path/to/generator.h5 --input_dir=/path/to/image/dir --output_dir=/path/to/deblurred/dir
-test
+python scripts/deblur_image.py --weight_path=./generator.h5 --input_dir=./blur --output_dir=./deblur
 ```

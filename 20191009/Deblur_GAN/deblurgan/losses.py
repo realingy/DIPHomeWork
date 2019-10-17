@@ -4,7 +4,8 @@ from keras.models import Model
 import numpy as np
 
 # Note the image_shape must be multiple of patch_shape
-image_shape = (256, 256, 3)
+# image_shape = (256, 256, 3)
+image_shape = (1024, 1024, 3)
 
 
 def l1_loss(y_true, y_pred):

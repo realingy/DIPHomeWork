@@ -178,7 +178,8 @@ class ReflectionPadding2D(Layer):
 
 
 if __name__ == "__main__":
-    input = Input(shape=(256, 256, 3))
+    # input = Input(shape=(256, 256, 3))
+    input = Input(shape=(1024, 1024, 3))
     x = ReflectionPadding2D(3)(input)
     model = Model(input, x)
     model.summary()
