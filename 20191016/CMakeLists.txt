@@ -6,6 +6,6 @@ project(DeblurOutFocus)
 include_directories(${CMAKE_SOURCE_DIR}/..)
 
 add_subdirectory(DeblurOutFocus)
-add_subdirectory(DetectOutFocus)
+
 
 

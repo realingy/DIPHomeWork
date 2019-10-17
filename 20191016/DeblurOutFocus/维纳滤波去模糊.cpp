@@ -1,5 +1,4 @@
-#include<time.h>
-#include<iostream>       //存储int型变量用32位
+#include <time.h>
 #include <stdlib.h>
 #include <cxcore.h>   
 #include "stdio.h"
@@ -8,6 +7,8 @@
 #include <highgui.h> 
 #include <cv.h> 
 #include <windows.h>
+#include <iostream>       //存储int型变量用32位
+
 using namespace std;
 using namespace cv;
 
@@ -15,54 +16,61 @@ using namespace cv;
 #define pi 3.1416;
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
 
-# pragma comment(linker, "/NODEFAULTLIB:atlthunk.lib")
-# pragma comment(linker, "/NODEFAULTLIB:LIBCMT")
-# pragma comment(linker, "/NODEFAULTLIB:MSVCRTD")
+//# pragma comment(linker, "/NODEFAULTLIB:atlthunk.lib")
+//# pragma comment(linker, "/NODEFAULTLIB:LIBCMT")
+//# pragma comment(linker, "/NODEFAULTLIB:MSVCRTD")
+
 BOOL fourn(double * data/*psrc*/, unsigned long nn[]/*w*/, int ndim/*2*/, int isign);
 double CY_sign(double cosphi);
 void CYmeshgrid(int xm,int xn,int ym,int yn,CvMat* &X,CvMat* &Y);
 void CY_special(double len,double theta,CvMat *&h_last);
+
 void main(int argc, char argv[])
 {
-IplImage *RGB = cvLoadImage("D:\\images\\128.png",-1);
-IplImage* redImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);    //定义三个通道图像
-IplImage* greenImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);    
-IplImage* blueImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);
-cvSplit(RGB,blueImage,greenImage,redImage,NULL);   //通道分割。注意：OpenCV分割成的三个通道参数顺序是：B,G,R
-//cvNamedWindow("RGB");
-//cvShowImage("RGB",RGB);
+	IplImage *RGB = cvLoadImage("original.jpg",-1);
+	IplImage* redImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);    //定义三个通道图像
+	IplImage* greenImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);    
+	IplImage* blueImage=cvCreateImage(cvGetSize(RGB),IPL_DEPTH_8U,1);
+	cvSplit(RGB,blueImage,greenImage,redImage,NULL);   //通道分割。注意：OpenCV分割成的三个通道参数顺序是：B,G,R
+	
+	//cvNamedWindow("RGB");
+	//cvShowImage("RGB",RGB);
 
-//处理蓝色通道
-int bHeight = blueImage->height;
-int bLineBytes = blueImage->widthStep;
-int bw = 1;
-int bh = 1;
-//保证离散傅里叶变换的宽度和高度为2的整数幂
-while(bw*2 <= bLineBytes)
-{
-bw = bw*2;
-}
-while(bh*2 <= bHeight)
-{
-bh = bh*2;
-}
-//输入退化图像的长和宽必须为2的整数倍；
-if(bw != (int)bLineBytes)
-{
-return;
-}
-if(bh != (int)bHeight)
-{
-return;
-}
+	//处理蓝色通道
+	int bHeight = blueImage->height;
+	int bLineBytes = blueImage->widthStep;
+	int bw = 1;
+	int bh = 1;
 
-//用于做FFT的数组
-double startime = (double)getTickCount(); // set the begining time
-// 指向源图像倒数第j行，第i个象素的指针   
+	//保证离散傅里叶变换的宽度和高度为2的整数幂
+	while(bw*2 <= bLineBytes)
+	{
+		bw = bw*2;
+	}
 
-double *fftSrc, *fftKernel, *laplacianKernel;
-fftSrc = new double [bHeight*bLineBytes*2+1];
-fftKernel = new double [bHeight*bLineBytes*2+1];
+	while(bh*2 <= bHeight)
+	{
+		bh = bh*2;
+	}
+
+	//输入退化图像的长和宽必须为2的整数倍；
+	if(bw != (int)bLineBytes)
+	{
+		return;
+	}
+
+	if(bh != (int)bHeight)
+	{
+		return;
+	}
+
+	//用于做FFT的数组
+	double startime = (double)getTickCount(); // set the begining time
+
+	// 指向源图像倒数第j行，第i个象素的指针   
+	double *fftSrc, *fftKernel, *laplacianKernel;
+	fftSrc = new double [bHeight*bLineBytes*2+1];
+	fftKernel = new double [bHeight*bLineBytes*2+1];
 laplacianKernel = new double [bHeight*bLineBytes*2+1];
 unsigned long nn[3] = {0};
 nn[1] = bHeight;
