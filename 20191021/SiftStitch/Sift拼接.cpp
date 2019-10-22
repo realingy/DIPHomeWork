@@ -77,6 +77,10 @@ void stitch()
 	{
 		cout << "debluring \"" << paths[i] << "\" ";
 		stitchAndClip(i);
+		roi.x = 0;
+		roi.y = 0;
+		roi.width = 0;
+		roi.height = 0;
 	}
 	*/
 
@@ -89,6 +93,7 @@ void stitch()
 
 void stitchAndClip(int index)
 {
+	time_t begin = clock();
 	Mat img0 = g_images[index];
 	Mat img1 = g_images[index+1];
 	Mat dst = doStitchTwo(img0, img1);
@@ -99,21 +104,15 @@ void stitchAndClip(int index)
 		dst = stitchTwo(dst, g_images[i]);
 	}
 	
-	dst = Optimize(dst); // 裁剪
+	//dst = Optimize(dst); // 裁剪
 	
 	//中值滤波
-	Mat res;
+	//Mat res;
 
-	#if 0
-		// 上采样
-		pyrUp(dst, res, Size(dst.cols * 2, dst.rows * 2));
-		//rectangle(dst, cvPoint(roi.x, roi.y), cvPoint(roi.x+roi.width, roi.y+roi.height), Scalar(0, 0, 255), 2, 2, 0);
-	#else
-		res = dst.clone();
-	#endif
+	//res = dst.clone();
 	
-	namedWindow("拼接效果", WINDOW_NORMAL);
-	imshow("拼接效果", res);
+	//namedWindow("拼接效果", WINDOW_NORMAL);
+	//imshow("拼接效果", dst);
 	//imwrite("res.png", res);
 	
 	string path = paths[index];
@@ -121,26 +120,16 @@ void stitchAndClip(int index)
 	string name(path.substr(pos + 1));
 	string filename = dir_deblur + name;
 	imwrite(filename, res(Rect(res.cols-g_width, 0, g_width, g_height)));
+	imwrite(filename, dst);
+
+	time_t end = clock();
+	double interval = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "interval: " << interval << endl;
 }
 
 int main()
 {
 	stitch();
-#if 0
-	Mat img = imread("res.png");
-//	Mat res;
-//	medianBlur(img, res, 3);
-
-	// 锐化
-	Mat laplaci;
-	Laplacian(img, laplaci, CV_8UC3, 3, 1, 0);
-	// Laplacian(img, laplaci, CV_16S);
-
-	imwrite("res_0_0.png", laplaci);
-
-	Mat res = img - laplaci;
-	imwrite("res_0_0_1.png", res);
-#endif
 
 	return 0;
 }
@@ -294,7 +283,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	time_t end = clock();
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
-	cout << "interval: " << interval << endl;
+	// cout << "interval: " << interval << endl;
 
 	return dst;
 }
