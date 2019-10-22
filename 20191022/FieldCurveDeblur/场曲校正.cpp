@@ -98,7 +98,11 @@ void stitchAndClip(int index)
 	Mat img0 = g_images[index];
 	Mat img1 = g_images[index+2];
 
-	Mat img0roi = img0(Rect(0, g_height * 2 / 3, g_width / 3, g_height / 3));
+	//Mat img0roi = img0(Rect(0, g_height / 2, g_width / 2, g_height / 2));
+	//Mat img1roi = img1(Rect(g_width / 4, g_height / 4, g_width / 2, g_height / 2));
+	Rect rect0(0, g_height * 2 / 3, g_width / 3, g_height / 3);
+	//Mat img0roi = img0(Rect(0, g_height * 2 / 3, g_width / 3, g_height / 3));
+	Mat img0roi = img0(rect0);
 	Mat img1roi = img1(Rect(g_width / 3, g_height / 3, g_width / 3, g_height / 3));
 
 	Mat dst = doStitchTwo(img0roi, img1roi);
@@ -127,7 +131,11 @@ void stitchAndClip(int index)
 	string name(path.substr(pos + 1));
 	string filename = dir_deblur + name;
 	//imwrite(filename, dst(Rect(dst.cols-g_width, 0, g_width, g_height)));
-	imwrite(filename, dst);
+	Mat dstroi = dst(Rect(dst.cols - g_width/3, 0,g_width/3, g_height/3));
+	//imwrite(filename, dst);
+	dstroi.copyTo(img0(rect0));
+	//imwrite(filename, dstroi);
+	imwrite(filename, img0);
 
 	time_t end = clock();
 	double interval = double(end - begin) / CLOCKS_PER_SEC;
