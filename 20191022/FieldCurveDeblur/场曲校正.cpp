@@ -92,10 +92,12 @@ void stitchAndClip(int index)
 {
 	time_t begin = clock();
 	Mat img0 = g_images[index];
-	Mat img1 = g_images[index+2];
+	//Mat img1 = g_images[index+2];
+	Mat img1 = g_images[index+1];
 
 	Rect rect0(0, g_height / 2, g_width / 2, g_height / 2);
-	Rect rect1(g_width / 4, g_height / 4, g_width / 2, g_height / 2);
+	//Rect rect1(g_width / 4, g_height / 4, g_width / 2, g_height / 2);
+	Rect rect1(g_width * 3 / 8 - 60, g_height * 5 / 12, g_width / 2, g_height / 2);
 	// Rect rect0(0, g_height * 2 / 3, g_width / 3, g_height / 3);
 	// Rect rect1(g_width / 3, g_height / 3, g_width / 3, g_height / 3);
 	Mat img0roi = img0(rect0);
@@ -182,7 +184,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	// sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
 	vector<DMatch> good_matches;
-	int ptsPairs = std::min(1000, (int)(matches.size()));
+	int ptsPairs = std::min(500, (int)(matches.size()));
 	for (int i = 0; i < ptsPairs; i++)
 	{
 		good_matches.push_back(matches[i]); //距离最小的700个压入新的DMatch
@@ -203,6 +205,9 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		keypoint2.push_back(key2[good_matches[i].queryIdx]);
 	}
 
+	std::cout << "count of keypoints: " << good_matches.size() << std::endl;
+
+	/*
 	// Ransac消除误匹配
 	int times = 0, current_num = 1, per_num = 0;;
 	Mat img_Ransac_matches;
@@ -229,6 +234,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		else
 			break;
 	}
+	*/
 
 	vector<Point2f> imagePoints1, imagePoints2;
 	for (int i = 0; i < good_matches.size(); i++)
