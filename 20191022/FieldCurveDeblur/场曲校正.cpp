@@ -92,14 +92,10 @@ void stitchAndClip(int index)
 {
 	time_t begin = clock();
 	Mat img0 = g_images[index];
-	//Mat img1 = g_images[index+2];
 	Mat img1 = g_images[index+1];
 
 	Rect rect0(0, g_height / 2, g_width / 2, g_height / 2);
-	//Rect rect1(g_width / 4, g_height / 4, g_width / 2, g_height / 2);
 	Rect rect1(g_width * 3 / 8 - 60, g_height * 5 / 12, g_width / 2, g_height / 2);
-	// Rect rect0(0, g_height * 2 / 3, g_width / 3, g_height / 3);
-	// Rect rect1(g_width / 3, g_height / 3, g_width / 3, g_height / 3);
 	Mat img0roi = img0(rect0);
 	Mat img1roi = img1(rect1);
 
@@ -111,7 +107,6 @@ void stitchAndClip(int index)
 	string name(path.substr(pos + 1));
 	string filename = dir_deblur + name;
 	Rect roi2(dst.cols - g_width/2, 0,g_width/2, g_height/2);
-	// Rect roi2(dst.cols - g_width/3, 0,g_width/3, g_height/3);
 	Mat dstroi = dst(roi2);
 	dstroi.copyTo(img0(rect0));
 	imwrite(filename, img0);
@@ -143,14 +138,12 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	int addh = height1 - height2;
 	int addw = width1 - width2;
-	// cout << "addw: " << addw << "addh: " << addh << endl;
 
 	// make border
 	int addtop = 0;
 	int addbottom = BORDERHEIGHT;
 	int addleft = BORDERWIDTH;
 	int addright = 0;
-	// copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
 	copyMakeBorder(img2, imageMatch, addtop, addbottom + addh, addleft+addw, addright, 0, Scalar(0, 0, 0));
 	int h = imageMatch.rows * 0.2;
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
@@ -205,7 +198,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		keypoint2.push_back(key2[good_matches[i].queryIdx]);
 	}
 
-	std::cout << "count of keypoints: " << good_matches.size() << std::endl;
+	// std::cout << "count of keypoints: " << good_matches.size() << "  ";
 
 	/*
 	// Ransac消除误匹配
