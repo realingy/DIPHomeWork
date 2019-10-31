@@ -143,26 +143,19 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	// make border
 	int addtop = 0;
 	int addbottom = BORDERHEIGHT;
-	int addleft = BORDERWIDTH; //小于420出现拼接模糊
+	int addleft = BORDERWIDTH;
 	int addright = 0;
 	// copyMakeBorder(img2, imageMatch, addh, addbottom , addleft, addw, 0, Scalar(0, 0, 0));
 	copyMakeBorder(img2, imageMatch, addtop, addbottom + addh, addleft+addw, addright, 0, Scalar(0, 0, 0));
 	int h = imageMatch.rows * 0.2;
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
-	// Ptr<SIFT> sift; //创建方式和OpenCV2中的不一样,并且要加上命名空间xfreatures2, 否则即使配置好了还是显示SIFT为未声明的标识符  
 	Ptr<SIFT> sift = SIFT::create(15000);
 
-	// Ptr<ORB> sift = ORB::create(8000);
-	// sift->setFastThreshold(0);
-
-	//BFMatcher matcher; //实例化一个暴力匹配器
 	FlannBasedMatcher matcher; //实例化Flann匹配器
 	Mat key_left, key_right;
 	vector<KeyPoint> key1, key2;
-	vector<DMatch> matches;    //DMatch是用来描述匹配好的一对特征点的类，包含这两个点之间的相关信息
-							   //比如左图有个特征m，它和右图的特征点n最匹配，这个DMatch就记录它俩最匹配，并且还记录m和n的
-							   //特征向量的距离和其他信息，这个距离在后面用来做筛选
+	vector<DMatch> matches;
 
 	int rows = imageMatch.rows;
 	int cols = imageMatch.cols;
@@ -171,13 +164,8 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	cvtColor(imageSrc, graySrc, CV_BGR2GRAY);
 	cvtColor(imageMatch, grayMatch, CV_BGR2GRAY);
 
-	// timeCounter("xx", begin);
-	// sift->detectAndCompute(imageMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
 	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	// timeCounter("yy", begin);
-	// sift->detectAndCompute(imageSrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
 	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
-	// timeCounter("zz", begin);
 
 	// Mat keySrc, keyMatch;
 	// drawKeypoints(graySrc, key2, keySrc);//画出特征点
@@ -190,13 +178,14 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	// sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
 	vector<DMatch> good_matches;
-	int ptsPairs = std::min(2000, (int)(matches.size()));
+	int ptsPairs = std::min(700, (int)(matches.size()));
 	for (int i = 0; i < ptsPairs; i++)
 	{
-		good_matches.push_back(matches[i]); //距离最小的500个压入新的DMatch
+		good_matches.push_back(matches[i]); //距离最小的700个压入新的DMatch
 	}
 
-	// Mat outimg; //drawMatches这个函数直接画出摆在一起的图
+	// Mat outimg;
+	//drawMatches这个函数直接画出摆在一起的图
 	// drawMatches(imageMatch, key1, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
 	// namedWindow("特征匹配效果", WINDOW_NORMAL);
 	// imshow("特征匹配效果", outimg);
@@ -210,11 +199,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 		imagePoints2.push_back(key2[good_matches[i].queryIdx].pt);
 	}
 
-	// 获取图像1到图像2的投影映射矩阵 尺寸为3*3  
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
-	// 也可以使用getPerspectiveTransform方法获得透视变换矩阵，不过要求只能有4个点，效果稍差  
-	// Mat homo=getPerspectiveTransform(imagePoints1,imagePoints2);  
-	// cout << "变换矩阵为：\n" << endl << homo << endl << endl; //输出映射矩阵   
 
 	// 计算配准图的四个顶点坐标
 	CalcCorners(homo, imageMatch);
@@ -222,12 +207,10 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	Rect roi = Rect(imageMatch.cols - g_width, 0, g_width, g_height);
 	CalcROICorners(homo, roi);
 
-	// 图像配准
-	Mat imageWrap; // , imageTransform2;
-	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows+h)); //透视变换
-	// rectangle(imageWrap, cvPoint(cornersroi.left_bottom.x, cornersroi.left_top.y), cvPoint(cornersroi.right_top.x , cornersroi.right_bottom.y), Scalar(0, 0, 255), 1, 1, 0);
+	// 透视变换
+	Mat imageWrap;
+	warpPerspective(imageMatch, imageWrap, homo, Size(imageMatch.cols, imageMatch.rows+h));
 
-	// 创建拼接后的图,需提前计算图的大小
 	int dst_width = imageWrap.cols;
 	int dst_height = imageWrap.rows;
 
@@ -236,12 +219,6 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 
 	for (int i = 0; i < dst_height; ++i) {
 		for (int j = 0; j < dst_width; ++j) {
-			/*
-			if(imageWrap.at<Vec3b>(i, j)[0] != 0)
-				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
-			else
-				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
-			*/
 			if(imageSrc.at<Vec3b>(i, j)[0] != 0 && imageWrap.at<Vec3b>(i, j)[0] == 0)
 				dst.at<Vec3b>(i, j) = imageSrc.at<Vec3b>(i, j);
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
