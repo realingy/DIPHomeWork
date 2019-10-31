@@ -26,11 +26,14 @@ void timeCounter(string str, time_t start);
 inline void updateROI();
 Mat Optimize(Mat& img);
 void stitchAndClip(int index);
+Mat FundamentalRansac(vector<KeyPoint>& current_keypoint1, vector<KeyPoint>& current_keypoint2, vector<DMatch>& current_matches);
 
 Rect roi(0, 0, 0, 0);
 int g_width;
 int g_height;
 vector<Mat> g_images;
+vector<KeyPoint> Ransac_keypoint1, Ransac_keypoint2;
+vector<DMatch> Ransac_matches;
 
 #if 1
 string dir = "blur";
@@ -150,22 +153,23 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	int h = imageMatch.rows * 0.2;
 	copyMakeBorder(img1, imageSrc, addtop, addbottom + h, addleft, addright, 0, Scalar(0, 0, 0));
 
-	Ptr<SIFT> sift = SIFT::create(15000);
-
-	FlannBasedMatcher matcher; //实例化Flann匹配器
-	Mat key_left, key_right;
-	vector<KeyPoint> key1, key2;
-	vector<DMatch> matches;
-
 	int rows = imageMatch.rows;
 	int cols = imageMatch.cols;
 
+	// 转灰度图
 	Mat graySrc, grayMatch;
 	cvtColor(imageSrc, graySrc, CV_BGR2GRAY);
 	cvtColor(imageMatch, grayMatch, CV_BGR2GRAY);
 
-	sift->detectAndCompute(grayMatch, Mat(), key1, key_left); //输入图像，输入掩码，输入特征点，输出Mat，存放所有特征点的描述向量
-	sift->detectAndCompute(graySrc, Mat(), key2, key_right); //这个Mat行数为特征点的个数，列数为每个特征向量的尺寸，SURF是64（维）
+	Ptr<SIFT> sift = SIFT::create(15000); // 实例化特征检测器
+
+	FlannBasedMatcher matcher; //实例化Flann匹配器
+	Mat descriptor1, descriptor2;
+	vector<KeyPoint> key1, key2;
+	vector<DMatch> matches;
+
+	sift->detectAndCompute(grayMatch, Mat(), key1, descriptor1);
+	sift->detectAndCompute(graySrc, Mat(), key2, descriptor2);
 
 	// Mat keySrc, keyMatch;
 	// drawKeypoints(graySrc, key2, keySrc);//画出特征点
@@ -173,30 +177,64 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 	// drawKeypoints(grayMatch, key1, keyMatch);//画出特征点
 	// imwrite("keyMatch.png", keyMatch);
 
-	matcher.match(key_right, key_left, matches);             //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
+	matcher.match(descriptor2, descriptor1, matches); //匹配，数据来源是特征向量，结果存放在DMatch类型里面  
 
 	// sort函数对数据进行升序排列
 	sort(matches.begin(), matches.end());     //筛选匹配点，根据match里面特征对的距离从小到大排序
 	vector<DMatch> good_matches;
-	int ptsPairs = std::min(700, (int)(matches.size()));
+	int ptsPairs = std::min(1000, (int)(matches.size()));
 	for (int i = 0; i < ptsPairs; i++)
 	{
 		good_matches.push_back(matches[i]); //距离最小的700个压入新的DMatch
 	}
 
+	// 画特征匹配图
 	// Mat outimg;
-	//drawMatches这个函数直接画出摆在一起的图
 	// drawMatches(imageMatch, key1, imageSrc, key2, good_matches, outimg, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);  //绘制匹配点  
 	// namedWindow("特征匹配效果", WINDOW_NORMAL);
 	// imshow("特征匹配效果", outimg);
 
 	// 计算图像配准点
-	vector<Point2f> imagePoints1, imagePoints2;
+	vector<KeyPoint> keypoint1, keypoint2;
 
 	for (int i = 0; i < good_matches.size(); i++)
 	{
-		imagePoints1.push_back(key1[good_matches[i].trainIdx].pt);
-		imagePoints2.push_back(key2[good_matches[i].queryIdx].pt);
+		keypoint1.push_back(key1[good_matches[i].trainIdx]);
+		keypoint2.push_back(key2[good_matches[i].queryIdx]);
+	}
+
+	// Ransac消除误匹配
+	int times = 0, current_num = 1, per_num = 0;;
+	Mat img_Ransac_matches;
+	char window_name[] = "0次Ransac之后匹配结果";
+	Mat Fundamental;
+	while (1)
+	{
+		if (per_num != current_num) {
+			Ransac_keypoint1.clear();
+			Ransac_keypoint2.clear();
+			Ransac_matches.clear();
+			per_num = good_matches.size();
+			Fundamental = FundamentalRansac(keypoint1, keypoint2, good_matches);
+			cout << endl << "Ransac" << ++times << "次之后的匹配点数为：" << Ransac_matches.size() << endl;
+			cvWaitKey(1);
+			keypoint1.clear();
+			keypoint2.clear();
+			good_matches.clear();
+			keypoint1 = Ransac_keypoint1;
+			keypoint2 = Ransac_keypoint2;
+			good_matches = Ransac_matches;
+			current_num = good_matches.size();
+		}
+		else
+			break;
+	}
+
+	vector<Point2f> imagePoints1, imagePoints2;
+	for (int i = 0; i < good_matches.size(); i++)
+	{
+		imagePoints1.push_back(keypoint1[i].pt);
+		imagePoints2.push_back(keypoint2[i].pt);
 	}
 
 	Mat homo = findHomography(imagePoints1, imagePoints2, CV_RANSAC);
@@ -408,6 +446,33 @@ end:
 	// cout << "left: " << left << ", bottom: " << bottom << endl;
 	// timeCounter(begin);
 	return img(Rect(left, 0, cols-left, bottom));
+}
+
+Mat FundamentalRansac(vector<KeyPoint>& current_keypoint1, vector<KeyPoint>& current_keypoint2, vector<DMatch>& current_matches)
+{
+	vector<Point2f>p1, p2;
+	for (size_t i = 0; i < current_matches.size(); i++)
+	{
+		p1.push_back(current_keypoint1[i].pt);
+		p2.push_back(current_keypoint2[i].pt);
+	}
+
+	vector<uchar> RansacStatus;
+	Mat Fundamental = findFundamentalMat(p1, p2, RansacStatus, FM_RANSAC);
+	int index = 0;
+	for (size_t i = 0; i < current_matches.size(); i++)
+	{
+		if (RansacStatus[i] != 0)
+		{
+			Ransac_keypoint1.push_back(current_keypoint1[i]);
+			Ransac_keypoint2.push_back(current_keypoint2[i]);
+			current_matches[i].queryIdx = index;
+			current_matches[i].trainIdx = index;
+			Ransac_matches.push_back(current_matches[i]);
+			index++;
+		}
+	}
+	return Fundamental;
 }
 
 
