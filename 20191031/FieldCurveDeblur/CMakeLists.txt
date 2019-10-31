@@ -42,6 +42,6 @@ aux_source_directory(. DIR_SRCS)
 file(GLOB HEADER ./*.h)
 
 # 生成目标信息
-set(EXENAME ImageStitch)
+set(EXENAME FieldCurveDeblur)
 add_executable(${EXENAME} ${DIR_SRCS} ${HEADER})
-target_link_libraries (${EXENAME} ${OpenCV_LIBS})
+target_link_libraries (${EXENAME} ${OpenCV_LIBS} Qt5::Widgets)
