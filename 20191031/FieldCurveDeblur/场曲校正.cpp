@@ -71,11 +71,11 @@ void deblur()
 	g_height = img0.rows;
 	g_width = img0.cols;
 
-	// cout << "debluring \"" << paths[0] << "\" ";
-	// stitchAndClip(0);
+	//cout << "debluring \"" << paths[0] << "\" ";
+	//stitchAndClip(0);
 
 	int count = g_images.size();
-	for (int i = 0; i < count - 2; i++)
+	for (int i = 0; i < count - 1; i++)
 	{
 		cout << "debluring \"" << paths[i] << "\" ";
 		stitchAndClip(i);
@@ -95,13 +95,24 @@ void stitchAndClip(int index)
 	Mat img1 = g_images[index+1];
 
 	Rect rect0(0, g_height / 2, g_width / 2, g_height / 2);
-	Rect rect1(g_width * 3 / 8 - 60, g_height * 5 / 12, g_width / 2, g_height / 2);
+	Rect rect1(g_width / 10 , g_height * 2 / 5, g_width / 2, g_height / 2);
+	//Rect rect1(g_width / 6, g_height / 4, g_width / 2, g_height / 2);
+
+	/*
+	rectangle(img0, rect0, Scalar(0, 0, 255), 2, 2, 0);
+	rectangle(img1, rect1, Scalar(0, 0, 255), 2, 2, 0);
+
+	imwrite("1.png", img0);
+	imwrite("2.png", img1);
+	*/
+
 	Mat img0roi = img0(rect0);
 	Mat img1roi = img1(rect1);
 
 	Mat dst = doStitchTwo(img0roi, img1roi);
 	updateROI();
 	
+	// 保存与原图像同名的校正图像
 	string path = paths[index];
 	int pos = path.find_last_of('\\');
 	string name(path.substr(pos + 1));
@@ -261,7 +272,7 @@ Mat doStitchTwo(Mat & img1, Mat & img2)
 			else if(imageSrc.at<Vec3b>(i, j)[0] == 0 && imageWrap.at<Vec3b>(i, j)[0] != 0)
 				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j);
 			else
-				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.6 + imageSrc.at<Vec3b>(i, j) * 0.4;
+				dst.at<Vec3b>(i, j) = imageWrap.at<Vec3b>(i, j) * 0.7 + imageSrc.at<Vec3b>(i, j) * 0.3;
 		}
 	}
 
